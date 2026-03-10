@@ -49,8 +49,6 @@ The current structure is **correct** for this app. Next.js App Router co-locates
 
 ## Work Split Strategy
 
-**Why this split:** Michael is Deaf/hard-of-hearing and the person who conceived this app — he's the target user. He should own UI/UX, accessibility, and real-device testing because he'll immediately feel when something is wrong with the caption experience. Luba takes the backend plumbing, hooks, API, infra, and deployment.
-
 **Michael = UI / Components / UX / E2E / Accessibility / Real Device Testing**
 **Luba = Hooks / API / Audio Pipeline / Infra / Deployment / Backend Tests**
 
