@@ -4,7 +4,7 @@ import { buildGeminiPrompt } from '@/lib/geminiPrompt';
 import { parseGapFillerResponse, buildFallbackWords } from '@/lib/gapFillerParser';
 import type { GapFillerRequest, GapFillerResponse } from '@/types';
 
-const GEMINI_TIMEOUT_MS = 5000;
+const GEMINI_TIMEOUT_MS = 15000;
 
 function fallbackResponse(sentence: string): GapFillerResponse {
   return {
@@ -52,6 +52,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ ...fallbackResponse(sentence), rateLimited: true });
     }
     // timeout or network error
+    console.error('[gap-filler] Gemini error:', error?.message);
     return NextResponse.json(fallbackResponse(sentence));
   }
 
