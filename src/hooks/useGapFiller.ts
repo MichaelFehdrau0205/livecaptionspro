@@ -12,6 +12,7 @@ export function useGapFiller({ onResult }: UseGapFillerOptions) {
   const [paused, setPaused] = useState(false);
   const rateLimitPauseUntilRef = useRef<number>(0);
   const contextRef = useRef<string[]>([]);
+  const queueRef = useRef<Array<{ lineId: string; sentence: string }>>([]);
 
   const fill = useCallback(
     async (lineId: string, sentence: string) => {
@@ -47,11 +48,20 @@ export function useGapFiller({ onResult }: UseGapFillerOptions) {
 
         onResult(lineId, data);
       } catch {
-        // Network error — silently skip gap filling for this sentence
+        // Network error — queue for retry when connection returns
+        queueRef.current.push({ lineId, sentence });
       }
     },
     [onResult]
   );
 
-  return { fill, paused };
+  const flushQueue = useCallback(() => {
+    const items = [...queueRef.current];
+    queueRef.current = [];
+    items.forEach(({ lineId, sentence }) => {
+      fill(lineId, sentence);
+    });
+  }, [fill]);
+
+  return { fill, paused, flushQueue };
 }
