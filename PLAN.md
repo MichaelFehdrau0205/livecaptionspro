@@ -106,7 +106,7 @@ Code locations: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14
   - Before calling `startSession`, show a dialog: "Live Captions Pro needs microphone access to capture speech. Your audio is processed locally — no audio is sent to our servers."
   - "Allow Microphone" button → calls `startSession` → triggers `getUserMedia`
   - Handles denial gracefully (show error message, let user retry)
-  - Use your judgment on wording — you know what a Deaf user needs to feel safe granting mic access
+  - Use clear, reassuring wording that explains why mic access is needed
 - [ ] **Wire up feedback buttons** in `SessionEndScreen.tsx`
   - YES button: show a brief "Thanks for your feedback" message, track in session stats
   - NO button: show "Great!" message, track in session stats
@@ -134,7 +134,7 @@ Code locations: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14
 - [ ] **Add iOS splash screen images** to `public/splash/`
   - Generate splash screens for common iOS sizes (iPhone SE, 13/14/15, iPad)
   - Add `<link rel="apple-touch-startup-image">` tags to `layout.tsx`
-- [ ] **Polish caption display UX** — use your experience as a user to refine:
+- [ ] **Polish caption display UX** — refine the reading experience:
   - Is the interim text (gray/italic) readable enough? Adjust opacity/style if needed
   - Is the blinking cursor helpful or distracting? Tune or remove
   - Does the auto-scroll feel natural? Test with rapid speech
@@ -173,7 +173,7 @@ Code locations: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14
   - Verify color contrast WCAG AA: 4.5:1 for body text, 3:1 for large text
   - Predicted words: verify they have **both** underline AND highlight (PRD requires this — currently CaptionLine has both ✓)
   - Uncertain/orange words: verify contrast ratio against dark background
-  - As the target user, are the visual distinctions between word types clear enough at a glance during a fast lecture?
+  - Are the visual distinctions between word types clear enough at a glance during a fast lecture?
 - [ ] **Touch target audit** — ensure all interactive elements are min 44x44px
   - CaptionLine words: currently `inline` spans — may be too small to tap. Add padding?
   - ControlBar buttons: currently min-h-[56px] ✓
@@ -238,7 +238,7 @@ Code locations: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14
 ### Day 5 (Sat, Mar 14) — Real Device Testing + Bug Fixes + Launch
 
 **Michael — Real Device Testing as Target User (most critical day)**
-- [ ] **Test on real iPhone (Safari)** — as a Deaf user would actually use it:
+- [ ] **Test on real iPhone (Safari)** — full end-to-end user flow:
   - Mic permission pre-prompt → does the explanation feel trustworthy?
   - AudioContext resume on tap (iOS requires user gesture)
   - STT auto-restart on silence (iOS stops after ~5s)
