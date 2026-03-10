@@ -72,7 +72,7 @@ export function useSpeechRecognition(callbacks: SpeechRecognitionCallbacks) {
   const activeRef = useRef(false);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const callbacksRef = useRef(callbacks);
-  callbacksRef.current = callbacks;
+  useEffect(() => { callbacksRef.current = callbacks; }, [callbacks]);
 
   const resetSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);

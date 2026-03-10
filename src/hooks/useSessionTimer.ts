@@ -13,15 +13,12 @@ export function useSessionTimer(startTime: number | null) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    if (startTime === null) {
-      setElapsed(0);
-      return;
-    }
+    if (startTime === null) return;
     const id = setInterval(() => {
       setElapsed(Math.floor((Date.now() - startTime) / 1000));
     }, 1000);
     return () => clearInterval(id);
   }, [startTime]);
 
-  return formatTime(elapsed);
+  return formatTime(startTime === null ? 0 : elapsed);
 }
