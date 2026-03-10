@@ -33,12 +33,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json(fallbackResponse(sentence));
   }
 
-  const prompt = buildGeminiPrompt(sentence, context.slice(-5));
+  const prompt = buildGeminiPrompt(sentence, context.slice(-5), domain);
 
   let rawText: string;
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('timeout')), GEMINI_TIMEOUT_MS)
@@ -48,11 +48,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     rawText = result.response.text();
   } catch (err: unknown) {
     const error = err as Error & { status?: number };
-    if (error?.status === 429 || error?.message?.includes('quota')) {
+    console.error('[gap-filler] Gemini error:', error?.message, 'status:', error?.status);
+    if (error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('Resource has been exhausted')) {
       return NextResponse.json({ ...fallbackResponse(sentence), rateLimited: true });
     }
-    // timeout or network error
-    console.error('[gap-filler] Gemini error:', error?.message);
     return NextResponse.json(fallbackResponse(sentence));
   }
 
@@ -62,7 +61,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Potentially malformed — one retry
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
       const retryResult = await model.generateContent(prompt);
       parsed = parseGapFillerResponse(retryResult.response.text(), sentence);
     } catch {

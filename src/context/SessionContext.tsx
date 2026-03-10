@@ -39,6 +39,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const submittedLineIds = useRef<Set<string>>(new Set());
 
   const onGapFillerResult = useCallback((lineId: string, response: GapFillerResponse) => {
+    console.log('[gap-filler] lineId:', lineId, 'correctedSentence:', response.correctedSentence);
+    console.log('[gap-filler] words:', JSON.stringify(response.words));
     const words = response.words.map((w) => ({ ...w, flagged: false }));
     dispatch({
       type: 'APPLY_GAP_FILLER',
@@ -46,7 +48,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const { fill: fillGap, paused: gapFillerPaused } = useGapFiller({ onResult: onGapFillerResult });
+  const { fill: fillGap, paused: gapFillerPaused, flushQueue } = useGapFiller({ onResult: onGapFillerResult });
 
   // Watch for new finalized lines and send them to gap filler
   useEffect(() => {
@@ -69,6 +71,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const isListening = state.status === 'listening';
   useWakeLock(isListening);
+
+  // Auto-restart STT and flush gap filler queue on reconnect
+  const prevConnectionStatusRef = useRef(connectionStatus);
+  useEffect(() => {
+    const prev = prevConnectionStatusRef.current;
+    prevConnectionStatusRef.current = connectionStatus;
+
+    if (state.status !== 'listening') return;
+
+    if (prev !== 'lost' && connectionStatus === 'lost') {
+      stopSTT();
+    }
+
+    if (prev !== 'connected' && connectionStatus === 'connected') {
+      startSTT();
+      flushQueue();
+    }
+  }, [connectionStatus, state.status, startSTT, stopSTT, flushQueue]);
 
   const startSession = useCallback(async () => {
     submittedLineIds.current = new Set();

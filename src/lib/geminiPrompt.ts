@@ -1,21 +1,27 @@
 /**
  * Builds the Gemini prompt for gap-filling a finalized caption sentence.
  */
-export function buildGeminiPrompt(sentence: string, context: string[]): string {
+export function buildGeminiPrompt(sentence: string, context: string[], domain: string = 'education'): string {
   const contextBlock =
     context.length > 0
       ? context.map((s, i) => `${i + 1}. ${s}`).join('\n')
       : '(No previous context)';
 
-  return `You are a real-time caption correction system for a live lecture in an education setting.
+  return `You are a real-time caption correction system for a live lecture in a ${domain} setting.
 
-Given a speech-to-text transcription that may contain errors, dropped words, or misheard terms:
-1. Identify and fix likely transcription errors based on context
-2. Fill in any obviously missing words
-3. Assign a confidence score (0.0-1.0) to each word:
-   - 1.0: Word was in original and is clearly correct
-   - 0.7-0.9: Word was in original but might be wrong
-   - 0.3-0.6: Word was predicted/filled by you
+Speech-to-text systems frequently mishear words — especially proper nouns, technical terms, and short words. Your job is to critically evaluate EVERY word and correct errors.
+
+Instructions:
+1. Read the sentence and context carefully. Ask: does each word make grammatical and contextual sense?
+2. Fix transcription errors — wrong words, dropped words, repeated words, misheard terms
+3. Be skeptical. STT often produces nonsensical phrases. If a word seems out of place, it was probably misheard.
+4. Assign EACH word a type and confidence:
+   - type "confirmed", confidence 0.9-1.0: Word was in the original AND makes perfect sense in context
+   - type "uncertain", confidence 0.7-0.89: Word was in the original but seems slightly off or unusual
+   - type "predicted", confidence 0.3-0.6: Word was CHANGED or ADDED by you to fix an error
+
+IMPORTANT: If you change a word from the original, it MUST be type "predicted" with confidence < 0.7.
+IMPORTANT: If a word looks like a common STT error (wrong homophone, garbled word, repeated word), mark it "uncertain" even if you keep it.
 
 Return JSON only. No explanation. No markdown code fences.
 

@@ -33,7 +33,7 @@ export interface SessionState {
 export interface GapFillerRequest {
   sentence: string;
   context: string[];
-  domain: 'education';
+  domain?: string;
 }
 
 export interface GapFillerWordResult {
