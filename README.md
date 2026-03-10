@@ -15,7 +15,7 @@ Live Captions Pro combines real-time speech-to-text with an AI layer that fills 
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 15 (App Router) + TypeScript |
+| Framework | Next.js 16 (App Router) + TypeScript |
 | Styling | Tailwind CSS |
 | Speech-to-Text | Web Speech API (browser built-in) |
 | AI Gap Filler | Google Gemini 2.5 Flash API |
@@ -33,7 +33,7 @@ Live Captions Pro combines real-time speech-to-text with an AI layer that fills 
 ### Setup
 
 ```bash
-git clone https://github.com/your-org/livecaptionspro.git
+git clone https://github.com/MichaelFehdrau0205/livecaptionspro.git
 cd livecaptionspro
 npm install
 ```

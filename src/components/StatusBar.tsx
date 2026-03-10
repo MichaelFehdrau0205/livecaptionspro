@@ -1,0 +1,40 @@
+'use client';
+
+interface StatusBarProps {
+  connectionStatus: 'connected' | 'reconnecting' | 'lost';
+  timer: string;
+  gapFillerPaused: boolean;
+}
+
+export function StatusBar({ connectionStatus, timer, gapFillerPaused }: StatusBarProps) {
+  const isConnected = connectionStatus === 'connected';
+
+  return (
+    <div
+      className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#1a1a2e]"
+      data-testid="status-bar"
+    >
+      {/* Listening indicator */}
+      <div className="flex items-center gap-2" data-testid="listening-indicator">
+        <span
+          className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`}
+        />
+        <span className="text-sm font-semibold tracking-widest text-white/80 uppercase">
+          {connectionStatus === 'connected'
+            ? 'Listening'
+            : connectionStatus === 'reconnecting'
+              ? 'Reconnecting...'
+              : 'Connection Lost'}
+        </span>
+        {gapFillerPaused && (
+          <span className="ml-2 text-xs text-amber-400">AI enhancement paused</span>
+        )}
+      </div>
+
+      {/* Timer */}
+      <span className="text-sm font-mono text-white/60" data-testid="session-timer">
+        {timer}
+      </span>
+    </div>
+  );
+}
