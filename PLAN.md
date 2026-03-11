@@ -26,21 +26,29 @@
 | 5 test files | Done | 37 tests passing (CaptionLine, StartScreen, StatusBar, captionReducer, gapFillerParser) |
 | E2E test shells | Done | session.spec.ts + mobile.spec.ts exist |
 
-### What's BROKEN or INCOMPLETE (P0 features from PRD)
+### What's DONE — Days 1-3 fixes (both Luba + Michael)
 
-| # | Gap | What's wrong | PRD requirement |
-|---|-----|-------------|-----------------|
-| 1 | **RNNoise is a placeholder** | `audio-processor.js` is a pass-through — does zero noise suppression | "RNNoise WASM for noise suppression" |
-| 2 | **STT doesn't restart on reconnect** | `useConnectionStatus` detects online/offline, but `SessionContext` never reacts | "Captions auto-resume on reconnection" |
-| 3 | **Gap Filler doesn't queue offline** | If offline when a sentence finalizes, sentence is lost forever | "Gap Filler queues unsent sentences and processes them on reconnection" |
-| 4 | **Feedback buttons do nothing** | SessionEndScreen YES/NO buttons have no `onClick` | "End-of-session 'Did you miss anything?' prompt" |
-| 5 | **No mic permission pre-prompt** | `startSession` calls `getUserMedia` directly with no explanation UI | "Show pre-prompt UI explaining why mic is needed" |
-| 6 | **domain param unused** | API route destructures `domain` but never passes it to Gemini prompt | "Education/lecture domain hints" |
-| 7 | **Service worker is minimal** | Only caches `/` and `/manifest.json` | "Service worker caches app shell for instant repeat loads" |
-| 8 | **No iOS splash screens** | `public/splash/` directory doesn't exist | TDD specifies splash screens for iOS |
-| 9 | **Not deployed** | No Vercel deployment, no env vars set, no production URL | "Deploy to Vercel" |
-| 10 | **8 test files missing** | TDD specifies test files that don't exist | Testing strategy in TDD |
-| 11 | **No accessibility audit done** | Components have some aria-labels but no systematic audit | "WCAG AA, Lighthouse > 90" |
+| # | Was broken | Fixed by | Day |
+|---|-----------|----------|-----|
+| 1 | RNNoise was a placeholder | Luba — real WASM integration | 2 |
+| 2 | STT didn't restart on reconnect | Luba — SessionContext watches connectionStatus | 1 |
+| 3 | Gap Filler didn't queue offline | Luba — flushQueue() in useGapFiller | 1 |
+| 4 | Feedback buttons did nothing | Michael — GIVE_FEEDBACK action + SessionEndScreen | 1 |
+| 5 | No mic permission pre-prompt | Michael — pre-prompt modal in StartScreen | 1 |
+| 6 | domain param unused | Luba — passed into buildGeminiPrompt() | 1 |
+| 7 | Service worker was minimal | Luba — full caching strategies, v2 | 2 |
+| 8 | No iOS splash screens | Michael — layout.tsx + public/splash/ | 2 |
+| 10 | 8 test files missing | Both — all W1 test files now exist | 1-3 |
+| 11 | No accessibility audit | Michael — full WCAG AA audit, touch targets | 3 |
+
+### What's still INCOMPLETE
+
+| # | Gap | Owner | Day |
+|---|-----|-------|-----|
+| 9 | **Not deployed** | Luba | 4 |
+| — | **E2E test suite expansion** | Michael | 4 |
+| — | **Lighthouse audit score > 90** | Michael | 3/5 |
+| — | **Real device testing** | Both | 5 |
 
 ---
 
@@ -116,59 +124,59 @@ Code: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14-20` (rend
 > **Sync at start of day:** Luba commits type changes to `src/types/index.ts` first, then Michael adds `feedbackGiven`.
 
 **Michael — Mic Permission UX + Feedback Buttons + Component Tests**
-- [ ] **Build mic permission pre-prompt modal** in `StartScreen.tsx`
+- [x] **Build mic permission pre-prompt modal** in `StartScreen.tsx`
   - Before calling `startSession`, show dialog: "Live Captions Pro needs microphone access. Your audio is processed locally — no audio is sent to our servers."
   - "Allow Microphone" button → calls `startSession` → triggers `getUserMedia`
   - Handle denial gracefully (show error message, let user retry)
   - Auto-detect previously granted permission via `navigator.permissions`
-- [ ] **Wire up feedback buttons** in `SessionEndScreen.tsx`
+- [x] **Wire up feedback buttons** in `SessionEndScreen.tsx`
   - YES button: show "Thanks for your feedback!", track in session stats
   - NO button: show "Great!", track in session stats
   - Add `feedbackGiven: 'yes' | 'no' | null` to `SessionState`
-- [ ] **Write `SessionEndScreen.test.tsx`** — renders stats, buttons work, feedback flow
-- [ ] **Write `ControlBar.test.tsx`** — mic indicator states, end session fires
+- [x] **Write `SessionEndScreen.test.tsx`** — renders stats, buttons work, feedback flow
+- [x] **Write `ControlBar.test.tsx`** — mic indicator states, end session fires
 
 **Luba — STT Auto-Reconnect + Gap Filler Queue**
-- [ ] **Implement STT auto-restart on reconnect** in `SessionContext.tsx`
+- [x] **Implement STT auto-restart on reconnect** in `SessionContext.tsx`
   - Watch `connectionStatus` — when it transitions 'lost'/'reconnecting' → 'connected', call `startSTT()` again
   - When it transitions to 'lost', call `stopSTT()`
   - Show status transitions in StatusBar automatically
-- [ ] **Implement Gap Filler offline queue** in `useGapFiller.ts`
+- [x] **Implement Gap Filler offline queue** in `useGapFiller.ts`
   - When fetch fails due to network, push `{ lineId, sentence }` to a queue (ref)
   - Expose a `flushQueue()` function
   - In `SessionContext`, call `flushQueue()` when connection restores
-- [ ] **Fix domain param** in `route.ts` — pass it into `buildGeminiPrompt()` or remove destructure
-- [ ] **Write `useConnectionStatus.test.ts`** — online/offline transitions, reconnect timer
+- [x] **Fix domain param** in `route.ts` — pass it into `buildGeminiPrompt()` or remove destructure
+- [x] **Write `useConnectionStatus.test.ts`** — online/offline transitions, reconnect timer
 
 ---
 
 ### Day 2 (Wed, Mar 11) — PWA Polish + Caption UX + Core Tests
 
 **Michael — Caption UX Polish + iOS Splash + Component Tests**
-- [ ] **Add iOS splash screen images** to `public/splash/`
+- [x] **Add iOS splash screen images** to `public/splash/`
   - Generate splash screens for iPhone SE, 13/14/15, iPad
   - Add `<link rel="apple-touch-startup-image">` tags to `layout.tsx`
-- [ ] **Polish caption display UX**
+- [x] **Polish caption display UX**
   - Is interim text (gray/italic) readable? Adjust opacity/style if needed
   - Is the blinking cursor helpful or distracting? Tune or remove
   - Does auto-scroll feel natural? Test with rapid speech
   - Is predicted word highlight (blue bg + underline) clear but not overwhelming?
-- [ ] **Write `CaptionArea.test.tsx`** — renders lines, shows interim text, auto-scroll
-- [ ] **Write `SessionScreen.test.tsx`** — renders StatusBar/CaptionArea/ControlBar, flag word works
+- [x] **Write `CaptionArea.test.tsx`** — renders lines, shows interim text, auto-scroll
+- [x] **Write `SessionScreen.test.tsx`** — renders StatusBar/CaptionArea/ControlBar, flag word works
 
 **Luba — RNNoise + Service Worker + Hook Tests**
 - [x] **Integrate real RNNoise WASM** into `public/audio-processor.js`
   - Uses `@jitsi/rnnoise-wasm` — `rnnoise-sync.js` + `rnnoise.wasm` copied to `public/`
   - AudioWorklet loads as ES module (`{ type: 'module' }`), processes 480-sample frames
   - Falls back to pass-through if WASM unavailable
-- [ ] **Enhance service worker** (`public/sw.js`)
+- [x] **Enhance service worker** (`public/sw.js`)
   - Cache all static assets (JS bundles, CSS, fonts, icons)
   - Network-first for API routes, cache-first for static assets
   - Add version bump mechanism for cache invalidation
-- [ ] **Write `useSpeechRecognition.test.ts`**
+- [x] **Write `useSpeechRecognition.test.ts`**
   - Mock SpeechRecognition constructor
   - Test onInterim/onFinal callbacks, auto-restart on unexpected end (iOS), unsupported browser
-- [ ] **Write `useAudioPipeline.test.ts`**
+- [x] **Write `useAudioPipeline.test.ts`**
   - Mock getUserMedia + AudioContext
   - Test start/stop lifecycle + cleanup, permission denied error handling
 
@@ -179,28 +187,28 @@ Code: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14-20` (rend
 > **Sync at start of day:** Michael pulls Luba's branch before writing `SessionContext.test.tsx`.
 
 **Michael — Accessibility Audit + UI Polish**
-- [ ] **Full accessibility audit** on all components
+- [x] **Full accessibility audit** on all components
   - Verify `aria-live="polite"` on CaptionArea
   - Verify all buttons have `aria-label`
   - Verify color contrast WCAG AA: 4.5:1 for body text, 3:1 for large text
   - Predicted words: verify both underline AND highlight
   - Uncertain/orange words: verify contrast against dark background
-- [ ] **Touch target audit** — all interactive elements min 44×44px
+- [x] **Touch target audit** — all interactive elements min 44×44px
   - CaptionLine words: currently `inline` spans — may be too small. Add padding.
   - ControlBar, Start/End buttons: currently min-h-[56px] ✓
-- [ ] **Safe area insets** — verify `env(safe-area-inset-bottom)` on ControlBar, add `env(safe-area-inset-top)` to StatusBar
+- [x] **Safe area insets** — verify `env(safe-area-inset-bottom)` on ControlBar, add `env(safe-area-inset-top)` to StatusBar
 - [ ] **Run Lighthouse audit**, fix issues (target: PWA > 90, Accessibility > 90)
-- [ ] **Write `SessionContext.test.tsx`** — full integration: start/end session, gap filler dispatch
+- [x] **Write `SessionContext.test.tsx`** — full integration: start/end session, gap filler dispatch
 
 **Luba — API Integration Tests + Gap Filler Hardening**
-- [ ] **Write `route.integration.test.ts`** for `/api/gap-filler`
+- [x] **Write `route.integration.test.ts`** for `/api/gap-filler`
   - Mock GoogleGenerativeAI — test correct Gemini call
   - Test timeout (>5s → fallback), rate limit (429 → fallback + rateLimited flag)
   - Test malformed JSON → retry once → fallback, missing sentence → 400, missing API key → graceful fallback
-- [ ] **Write `useGapFiller.test.ts`**
+- [x] **Write `useGapFiller.test.ts`**
   - Test fetch call, onResult callback, rate limit pause, offline queue + flush
-- [ ] **Write `useWakeLock.test.ts`** + **`useSessionTimer.test.ts`**
-- [ ] **Harden gap filler error messages** — better logging for production debugging
+- [x] **Write `useWakeLock.test.ts`** + **`useSessionTimer.test.ts`**
+- [x] **Harden gap filler error messages** — better logging for production debugging
 
 ---
 
@@ -437,16 +445,16 @@ Code: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14-20` (rend
 | One-tap session end | Done | — | — |
 | Tap-to-flag misheard word | Done | — | — |
 | Installable PWA (manifest + SW) | Done | — | — |
-| **Mic permission pre-prompt UI** | TODO | Michael | 1 |
-| **Feedback buttons (YES/NO) functional** | TODO | Michael | 1 |
-| **STT auto-restart on reconnect** | TODO | Luba | 1 |
-| **Gap Filler offline queue** | TODO | Luba | 1 |
-| **domain param used in Gemini prompt** | TODO | Luba | 1 |
-| **iOS splash screens** | TODO | Michael | 2 |
-| **RNNoise WASM noise suppression** | TODO | Luba | 2 |
-| **Service worker caches app shell** | TODO | Luba | 2 |
-| **Accessibility: WCAG AA compliant** | TODO | Michael | 3 |
-| **Touch targets >= 44px** | TODO | Michael | 3 |
+| **Mic permission pre-prompt UI** | Done | Michael | 1 |
+| **Feedback buttons (YES/NO) functional** | Done | Michael | 1 |
+| **STT auto-restart on reconnect** | Done | Luba | 1 |
+| **Gap Filler offline queue** | Done | Luba | 1 |
+| **domain param used in Gemini prompt** | Done | Luba | 1 |
+| **iOS splash screens** | Done | Michael | 2 |
+| **RNNoise WASM noise suppression** | Done | Luba | 2 |
+| **Service worker caches app shell** | Done | Luba | 2 |
+| **Accessibility: WCAG AA compliant** | Done | Michael | 3 |
+| **Touch targets >= 44px** | Done | Michael | 3 |
 | **Vercel production deploy** | TODO | Luba | 4 |
 | **Real device testing: iOS** | TODO | Michael | 5 |
 | **Real device testing: Android** | TODO | Luba | 5 |
@@ -482,19 +490,19 @@ Code: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14-20` (rend
 | StartScreen.test.tsx | Done (5) | — | — |
 | CaptionLine.test.tsx | Done (6) | — | — |
 | StatusBar.test.tsx | Done (6) | — | — |
-| SessionEndScreen.test.tsx | TODO | Michael | 1 |
-| ControlBar.test.tsx | TODO | Michael | 1 |
-| useConnectionStatus.test.ts | TODO | Luba | 1 |
-| CaptionArea.test.tsx | TODO | Michael | 2 |
-| SessionScreen.test.tsx | TODO | Michael | 2 |
-| useSpeechRecognition.test.ts | TODO | Luba | 2 |
-| useAudioPipeline.test.ts | TODO | Luba | 2 |
-| SessionContext.test.tsx | TODO | Michael | 3 |
-| route.integration.test.ts | TODO | Luba | 3 |
-| useGapFiller.test.ts | TODO | Luba | 3 |
-| useWakeLock.test.ts | TODO | Luba | 3 |
-| useSessionTimer.test.ts | TODO | Luba | 3 |
-| **Total W1** | **37 done + ~50 new** | | |
+| SessionEndScreen.test.tsx | Done | Michael | 1 |
+| ControlBar.test.tsx | Done | Michael | 1 |
+| useConnectionStatus.test.ts | Done | Luba | 1 |
+| CaptionArea.test.tsx | Done | Michael | 2 |
+| SessionScreen.test.tsx | Done | Michael | 2 |
+| useSpeechRecognition.test.ts | Done | Luba | 2 |
+| useAudioPipeline.test.ts | Done | Luba | 2 |
+| SessionContext.test.tsx | Done | Michael | 3 |
+| route.integration.test.ts | Done | Luba | 3 |
+| useGapFiller.test.ts | Done | Luba | 3 |
+| useWakeLock.test.ts | Done | Luba | 3 |
+| useSessionTimer.test.ts | Done | Luba | 3 |
+| **Total W1** | **All done** | | |
 | useDeepgram.test.ts | TODO | Luba | 7 |
 | fifoModel.test.ts | TODO | Michael | 6 |
 | viewer.spec.ts (E2E) | TODO | Michael | 9 |

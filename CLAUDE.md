@@ -29,7 +29,7 @@ npx playwright test e2e/session.spec.ts
 
 ### Session State Flow
 
-All session state lives in `src/context/SessionContext.tsx` via `useReducer` + `captionReducer`. The context wires together 6 hooks and exposes `startSession` / `endSession` to components.
+All session state lives in `src/context/SessionContext.tsx` via `useReducer` + `captionReducer`. The context wires together 6 hooks and exposes `startSession` / `endSession` / `giveFeedback(choice: 'yes' | 'no')` to components.
 
 ```
 User taps Start
@@ -47,7 +47,7 @@ User taps Start
 
 ```typescript
 // src/types/index.ts
-SessionState → captions: CaptionLine[]
+SessionState → captions: CaptionLine[] + feedbackGiven: 'yes' | 'no' | null
 CaptionLine  → words: CaptionWord[] + interim: string + isFinalized + gapFillerApplied
 CaptionWord  → text + type ('confirmed'|'predicted'|'uncertain') + confidence + flagged
 ```
@@ -127,4 +127,5 @@ Defined in `src/lib/captionReducer.ts`, dispatched via `SessionContext`:
 | `FINALIZE_LINE` | Converts `currentInterim` into a new `CaptionLine` with all words as `'confirmed'`, clears interim |
 | `APPLY_GAP_FILLER` | Replaces words on a finalized line with Gemini-corrected words (updates `type` + `confidence`), sets `gapFillerApplied: true` |
 | `FLAG_WORD` | Toggles `flagged: true` on a specific word (drives red underline) |
+| `GIVE_FEEDBACK` | Sets `feedbackGiven` to `'yes'` or `'no'`; `START_SESSION` resets it to `null` |
 | `END_SESSION` | Sets status to `'ended'`, preserves captions and stats for SessionEndScreen |
