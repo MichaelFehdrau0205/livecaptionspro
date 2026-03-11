@@ -1,4 +1,4 @@
-# Plan.md — Live Captions Pro: Implementation Plan
+# Plan2.md — Live Captions Pro: Implementation Plan
 **Product:** Live Captions Pro  
 **Version:** 2.0  
 **Author:** Luba & Michael  
@@ -20,15 +20,15 @@ Ship three production-ready features for Pro Captions across two milestones:
 
 | Milestone | Features | Target |
 |-----------|----------|--------|
-| M1 | Smart FIFO + Web Speech V1 | Week 2 |
-| M2 | Deepgram V2 + Mobile PWA | Week 5 |
-| M3 | QA, polish, deploy | Week 6 |
+| M1 | Smart FIFO + Web Speech V1 | Day 1 |
+| M2 | Deepgram V2 + Mobile PWA | Day 2 |
+| M3 | QA, polish, deploy | Day 3|
 
 ---
 
 ## Milestone 1 — Smart FIFO + Web Speech API
 
-### Week 1 — Foundation
+### Day 1 — Foundation
 
 **Task 1.1 — FIFO Data Model**
 - Define `lines[]` array structure: `{ id, speakerId, words[], interim, done }`
@@ -55,7 +55,7 @@ Ship three production-ready features for Pro Captions across two milestones:
 
 ---
 
-### Week 2 — Web Speech API Integration
+### Day 1 — Web Speech API Integration
 
 **Task 2.1 — Microphone Permission Flow**
 - Build permission overlay UI for first launch
@@ -95,7 +95,7 @@ Ship three production-ready features for Pro Captions across two milestones:
 
 ## Milestone 2 — Deepgram V2 + Mobile PWA
 
-### Week 3 — Deepgram Integration
+### Day 2 — Deepgram Integration
 
 **Task 3.1 — API Key Settings Panel**
 - Build settings drawer or modal for Deepgram API key entry
@@ -131,7 +131,7 @@ Ship three production-ready features for Pro Captions across two milestones:
 
 ---
 
-### Week 4 — Mobile PWA for End Users
+### Day 2 — Mobile PWA for End Users
 
 **Task 4.1 — PWA Setup**
 - Create `manifest.json` with name, icons, display: standalone, theme color
@@ -173,7 +173,7 @@ Ship three production-ready features for Pro Captions across two milestones:
 
 ---
 
-### Week 5 — Integration + End-to-End Testing
+### Day 2— Integration + End-to-End Testing
 
 **Task 5.1 — Operator → User Flow Test**
 - Operator starts session → generates QR → user scans → captions appear
@@ -198,7 +198,7 @@ Ship three production-ready features for Pro Captions across two milestones:
 
 ---
 
-### Week 6 — QA, Polish & Deploy
+### Day 3 — QA, Polish & Deploy
 
 **Task 6.1 — Bug Bash**
 - Run all user stories from PRD2 as acceptance tests
