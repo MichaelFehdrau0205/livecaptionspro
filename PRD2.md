@@ -1,337 +1,472 @@
-[Live Captions Pro] PRD v2
+# Live Captions Pro — Product Requirements Document
 
-Project: Live Captions Pro
-Owner: Luba Kaper and Michael Fehdrau
-Date: Sunday, March 08, 2026
-Updated: Sunday, March 09, 2026
+**Project:** Live Captions Pro
+**Authors:** Luba Kaper & Michael Fehdrau
+**Date:** March 08, 2026 — Updated March 10, 2026
+**Reference:** TDD.md, PLAN.md
+**Week 1 = MVP. Week 2 = Feature Expansion. Stop at Week 1 if time runs short.**
 
-Problem
-Live Captions exist — but they fail people at the worst moments. Words get dropped, technical terms get mangled, and there is no way to recover what was missed. For Deaf and hard of hearing users, this is not just frustrating — it means exclusion from critical conversations in healthcare, education, legal settings, and the workplace.
+---
+
+## Problem
+
+Live captions exist — but they fail people at the worst moments. Words get dropped, technical terms get mangled, and there is no way to recover what was missed. For Deaf and hard of hearing users, this is not just frustrating — it means exclusion from critical conversations in healthcare, education, legal settings, and the workplace.
 
 Current solutions from Google, Microsoft, and Apple all share the same core flaw: they show you what the AI heard — not what was actually said.
 
+---
 
-Supporting Context (Data Points & Research)
-About 48 million Americans — roughly 15% of the adult population — report some degree of hearing loss, and approximately 2 million people in the United States are considered functionally Deaf. Hearview
-More than 90% of Deaf children are born to hearing parents NIDCD — meaning most Deaf individuals grow up navigating a hearing world without built-in support systems.
-Deaf and hard of hearing individuals face significant obstacles in accessing education and employment opportunities, and Deaf children in the U.S. are less likely to graduate from high school than their hearing peers. The Treetop ABA
-Even the most advanced automated speech recognition systems struggle with accents, technical jargon, poor audio quality, and overlapping speakers — often achieving accuracies only between 80–90%. 24marketreports
-Around 65% of businesses now adopt live captioning to improve communication Global Growth Insights — yet none of the dominant tools are built specifically for high-stakes Deaf users.
-Google, Apple, and Microsoft all offer general-purpose captioning — but none own a specific vertical like healthcare, legal, or education where zero lost meaning is a necessity, not a preference.
+## Supporting Context
 
+- ~48 million Americans (15% of adults) report some degree of hearing loss; ~2 million are functionally Deaf
+- 90%+ of Deaf children are born to hearing parents — most navigate a hearing world without built-in support
+- Deaf and hard of hearing individuals face significant obstacles in education and employment
+- Even advanced ASR systems achieve only 80–90% accuracy with accents, jargon, and overlapping speakers
+- ~65% of businesses now adopt live captioning — yet none of the dominant tools are built for high-stakes Deaf users
 
-Competitive Landscape
+---
+
+## Competitive Landscape
 
 | Feature | Google Live Caption | Apple Live Captions | Microsoft Teams | Live Captions Pro |
 |---------|-------------------|--------------------|-----------------|-----------------------|
 | Real-time STT | Yes | Yes | Yes | Yes |
-| Gap Filler (AI-predicted missed words) | No | No | No | Yes — core differentiator |
-| Confidence Highlighting | No | No | No | Yes — visual trust layer |
+| Gap Filler (AI-predicted missed words) | No | No | No | **Yes — core differentiator** |
+| Confidence Highlighting | No | No | No | **Yes — visual trust layer** |
+| Multi-speaker color display | No | No | Limited | **Yes (Week 2)** |
+| Auto speaker diarization | No | No | Limited | **Yes via Deepgram (Week 2)** |
+| Standalone viewer app (shared session) | No | No | No | **Yes (Week 2)** |
 | Domain-specific vocabulary | No | Limited | Limited | Yes — vertical-focused |
-| Works offline | Yes (on-device) | Yes (on-device) | No | No (v1) |
-| Built for Deaf users | No — general purpose | No — general purpose | No — general purpose | Yes — purpose-built |
-| Open/free to use | Yes | Yes (Apple only) | Paid (Teams license) | Yes (MVP) |
+| Built for Deaf users | No | No | No | Yes — purpose-built |
+| Open/free to use | Yes | Yes (Apple only) | Paid | Yes (MVP) |
 
+---
 
-The Opportunity
-Live captioning technology exists — but no one has built it for a specific high-stakes environment. Google, Apple, and Microsoft all offer general-purpose solutions that prioritize accuracy scores over actual comprehension. The opportunity is to build the first captioning product designed around zero lost meaning — owning a vertical like healthcare, legal, or education where getting every word right isn't a nice-to-have, it's a necessity.
+## The Opportunity
 
+No one has built live captioning for a specific high-stakes environment. Google, Apple, and Microsoft prioritize accuracy scores over actual comprehension. The opportunity is to build the first captioning product designed around **zero lost meaning** — owning a vertical like healthcare, legal, or education where getting every word right is a necessity.
 
-Market Opportunity
-The global live captioning software market reached USD 1.42 billion in 2024 and is projected to grow at a CAGR of 13.1% from 2025 to 2033, reaching an estimated value of USD 4.10 billion. Growthmarketreports
-North America accounts for approximately 41% of global revenue — driven by federal accessibility laws such as the ADA and Section 508, which mandate real-time captioning for public communications. Growthmarketreports
-By 2050, it is estimated that over 900 million people — or one in every ten individuals — will have disabling hearing loss globally. Total Care ABA
-No single player currently owns the high-stakes vertical captioning space — healthcare, legal, and education all represent underserved markets where accuracy is legally and medically required.
-Live Captions Pro's opportunity is to capture the vertical-specific segment of this growing market by being the first product built around zero lost meaning — not just higher accuracy scores.
+**Market size:** Global live captioning market reached USD 1.42B in 2024, projected to reach USD 4.10B by 2033 (13.1% CAGR). North America accounts for ~41% of revenue, driven by ADA and Section 508 mandates. By 2050, 900M+ people globally will have disabling hearing loss.
 
+---
 
-Users & Needs
-Who:
-Primary Users: Deaf and hard of hearing individuals — including college students, professionals, and everyday users who rely on captions to access conversations in real time.
-Secondary Users: Hearing individuals who speak into the microphone — doctors, professors, lawyers, colleagues — whose speech is being transcribed for the primary user.
+## Users & Needs
 
+**Primary Users:** Deaf and hard of hearing individuals — college students, professionals, and everyday users who rely on captions to access conversations in real time.
 
-Needs:
-Primary User — Deaf User
-As a Deaf college student, I need to capture every word spoken in a fast-paced lecture because missing even one critical concept can affect my understanding, my grades, and my ability to keep up with my peers.
-As a Deaf employee, I need real-time captions during live meetings in order to contribute to discussions, stay informed, and be treated as an equal member of my team.
-Secondary User — Hearing Speaker
-As a professor lecturing to a Deaf student, I need my speech to be transcribed clearly and completely in order to deliver an equal learning experience without changing the way I teach.
-As a manager running a team meeting, I need my words and my colleagues' responses to be accurately captioned in real time in order to ensure my Deaf employee has full access to every decision, discussion, and direction being communicated.
+**Secondary Users:** Hearing individuals who speak into the mic — doctors, professors, lawyers, colleagues.
 
+### Primary User Stories
+- As a Deaf college student, I need to capture every word spoken in a fast-paced lecture because missing even one critical concept can affect my understanding and grades.
+- As a Deaf employee, I need real-time captions during live meetings to contribute to discussions and be treated as an equal member of my team.
 
-Proposed Solution
-Live Captions Pro is a live captioning platform that combines real-time speech-to-text with an AI layer that fills gaps, flags uncertainty, and delivers the full meaning of every conversation. It is built as a Progressive Web App (PWA) that works on both mobile and desktop browsers with zero installation.
+### Secondary User Stories
+- As a professor lecturing to a Deaf student, I need my speech transcribed clearly and completely to deliver an equal learning experience without changing the way I teach.
+- As a manager, I need my words and colleagues' responses accurately captioned so my Deaf employee has full access to every decision and direction.
 
+---
 
-Top 3 MVP Value Props:
-[The Vitamin] - Seeing every word fully and completely so the brain can process the message without any gaps. When there's a gap, the mind gets lost and the meaning breaks down.
-[The Painkiller] - The pain of dropped words and long silences — waiting for the next word to appear, losing the thread of the conversation because the soundwave didn't reach the microphone clearly enough.
-[The Steroid] - A supercharged audio layer that captures soundwaves more powerfully and delivers them straight to live captions within one second — no delay, no drop, no gap.
+## Proposed Solution
 
+Live Captions Pro is a live captioning platform that combines real-time speech-to-text with an AI layer that fills gaps, flags uncertainty, and delivers the full meaning of every conversation. Built as a Progressive Web App (PWA) — works on iOS Safari, Android Chrome, and desktop with zero installation.
 
-Goals & Non-Goals
-Goals:
-Deliver real-time live captions with zero lost meaning for Deaf and hard of hearing users
-Build a purpose-built captioning product for one high-stakes vertical — education (chosen for MVP due to testability and access)
-Achieve 97%+ caption accuracy that outperforms Google, Apple, and Microsoft
-Give users confidence in every caption through Gap Filler and Confidence Highlighting
-Ensure no word, meaning, or moment is lost between what was said and what was understood
+**Top 3 MVP Value Props:**
+- **[The Vitamin]** Seeing every word fully so the brain can process the message without any gaps
+- **[The Painkiller]** Eliminating the pain of dropped words and long silences — waiting for the next word, losing the thread of conversation
+- **[The Steroid]** A supercharged audio layer that delivers captions within one second — no delay, no drop, no gap
 
-Non-Goals:
-We are NOT building a general-purpose captioning tool for everyone — this is vertical-specific
-We are NOT building hardware in this version — Live Captions Pro is a software-first product
-We are NOT supporting every language in the MVP — English first, expansion later
-We are NOT building a full transcription storage or document export system in v1
-We are NOT replacing ASL interpreters — Live Captions Pro is a complement, not a substitute
-We are NOT targeting hearing users as the primary audience in this version
-We are NOT building offline support in v1 — the AI layer requires internet connectivity
-We are NOT building user accounts or authentication in v1 — the MVP is an open tool
+---
 
+## Goals & Non-Goals
 
-Technical Architecture (NEW)
+**Goals:**
+- Deliver real-time live captions with zero lost meaning for Deaf and hard of hearing users
+- Build a purpose-built captioning product for one high-stakes vertical — education (MVP)
+- Achieve 97%+ caption accuracy that outperforms Google, Apple, and Microsoft
+- Give users confidence through Gap Filler and Confidence Highlighting
+- Week 2: support multi-speaker events with color-coded speaker display and shared viewer sessions
 
-Platform: Progressive Web App (PWA)
-Why PWA: Works on iOS Safari, Android Chrome, and desktop browsers. No app store approval needed. One codebase for all platforms. Installable to home screen. Fastest path to mobile for a 1-week build.
+**Non-Goals:**
+- NOT a general-purpose captioning tool — vertical-specific
+- NOT hardware — software-first product
+- NOT multi-language in MVP — English first
+- NOT a transcription storage or document export system in v1
+- NOT replacing ASL interpreters — complement, not substitute
+- NOT targeting hearing users as primary audience in v1
+- NOT offline support in v1 — AI layer requires connectivity
+- NOT user accounts or authentication in v1
 
-Tech Stack (all free):
-- Frontend: Next.js (React) deployed on Vercel free tier
-- Speech-to-Text: Web Speech API (browser built-in, free, zero API keys)
-- AI Gap Filler: Google Gemini API free tier (Gemini 2.5 Flash — 250 requests/day, no credit card)
-- Audio Processing: Web Audio API + RNNoise WASM for noise suppression
-- Hosting: Vercel free tier (100GB bandwidth, serverless functions included)
-- Backend/Database: None in v1 (stateless — all processing happens per-session)
+---
 
-Upgrade Path (post-MVP):
-- STT: Deepgram ($200 free credit, WebSocket streaming, higher accuracy)
-- Database: Supabase free tier for session history and user accounts
-- AI: Claude API or OpenAI for more sophisticated gap filling
+## Technical Architecture (Summary — full detail in TDD.md)
 
+**Week 1 (MVP):**
+- Platform: PWA (Next.js on Vercel)
+- STT: Web Speech API (browser built-in, free)
+- AI Gap Filler: Google Gemini API free tier (Gemini 2.5 Flash)
+- Audio Processing: Web Audio API + RNNoise WASM
+- Backend: None — one serverless function (`/api/gap-filler`)
 
-Latency Budget (NEW)
+**Week 2 additions:**
+- STT V2: Deepgram WebSocket API (auto diarization)
+- Session Server: Node.js + WebSocket relay (Railway/Fly.io)
+- Viewer App: `/s/[sessionId]` route — standalone PWA for end users
 
-Target: Under 1 second from speech to displayed caption.
+---
+
+## Latency Budget
+
+Target: under 1 second from speech to displayed caption.
 
 | Stage | Budget | Method |
 |-------|--------|--------|
-| Audio capture | ~10ms | Web Audio API / getUserMedia() |
-| Noise filtering | ~20ms | RNNoise WASM via AudioWorklet |
-| Speech-to-Text | ~300-500ms | Web Speech API (interim results) |
+| Audio capture | ~10ms | getUserMedia() |
+| Noise filtering | ~20ms | RNNoise WASM AudioWorklet |
+| Speech-to-Text | ~300–500ms | Web Speech API (interim results) |
 | Caption rendering | ~10ms | React state update |
-| **Total (live captions)** | **~340-540ms** | **Well under 1 second** |
+| **Total (live captions)** | **~340–540ms** | **Well under 1 second** |
 
-Gap Filler runs asynchronously — it does NOT block live caption display. Captions appear immediately from STT; gap-filled corrections are applied after a 3-5 second delay on the sentence that just completed.
+Gap Filler runs asynchronously — does NOT block live caption display. Corrections are applied 3–5 seconds after a sentence finalizes.
 
+---
 
-Gap Filler — How It Works (NEW)
+## Gap Filler — How It Works
 
-The Gap Filler is the core differentiator. It works as a post-processing layer, not inline with live captions:
+The Gap Filler is the core differentiator. It works as a post-processing layer, not inline:
 
-1. Web Speech API streams interim results word-by-word to the screen (P0 — live captions)
-2. When a sentence or phrase is finalized by the STT engine, the completed text is sent to the Gemini API
-3. Gemini receives the raw transcript + conversation context (last 5 sentences) and is prompted to:
-   a. Identify likely dropped or misheard words based on grammar, context, and domain vocabulary
-   b. Assign a confidence score (high/medium/low) to each word
-   c. Return corrected text with annotations
-4. The UI updates the finalized sentence with corrections:
-   - High confidence words: displayed normally (default color)
-   - Medium confidence words: displayed in a distinct highlight color (Confidence Highlighting)
-   - AI-predicted/filled words: displayed in a second distinct style (e.g., underline + highlight)
-5. User sees live captions streaming in real time, then sees subtle corrections applied to completed sentences
+1. Web Speech API streams interim results word-by-word (live captions appear immediately)
+2. When a sentence finalizes, the completed text is sent to Gemini API
+3. Gemini receives raw transcript + last 5 sentences of context and:
+   - Identifies dropped or misheard words by grammar, context, and domain vocabulary
+   - Assigns a confidence score to each word
+   - Returns corrected text with annotations
+4. UI updates the finalized sentence with corrections:
+   - **High confidence (>90%):** white text — displayed normally
+   - **Medium confidence (70–90%):** amber/orange text — Confidence Highlighting
+   - **AI-predicted/filled (<70%):** blue background + underline
+   - **User-flagged:** red underline on tap
 
-Confidence Thresholds:
-- High (>90%): Word displayed as-is
-- Medium (70-90%): Word highlighted for user awareness
-- Low (<70%): Word marked as uncertain, original STT output preserved with flag
+**Rate Limiting:** Gemini free tier — 250 requests/day, 10/min. One request per completed sentence. Average 30-min session ≈ 200 sentences — within daily limit for 1 session/day.
 
-Rate Limiting Strategy:
-- Gemini free tier allows 250 requests/day at 10 requests/minute
-- Batch processing: send one request per completed sentence (not per word)
-- Average session of 30 minutes ≈ 200 sentences ≈ 200 API calls — within daily limit for 1 session/day
-- For MVP demo purposes, this is sufficient
+---
 
+## Audio Capture & Noise Handling
 
-Audio Capture & Noise Handling (NEW)
+1. `getUserMedia()` requests mic access (iOS Safari 14.5+, Android Chrome, desktop)
+2. Audio stream routed through Web Audio API `AudioContext`
+3. RNNoise WASM processes audio in AudioWorklet (~20ms latency)
+4. Cleaned audio fed to Web Speech API for transcription
 
-Audio Pipeline:
-1. getUserMedia() requests microphone access (works on iOS Safari 14.5+, Android Chrome, desktop browsers)
-2. Audio stream routed through Web Audio API AudioContext
-3. RNNoise WASM processes audio in an AudioWorklet for real-time noise suppression (~20ms latency)
-4. Cleaned audio fed to Web Speech API SpeechRecognition for transcription
+**Known Limitations:**
+- iOS Safari: `SpeechRecognition` may stop after silence — requires auto-restart
+- iOS Safari: `AudioContext` must be resumed on user gesture
+- Web Speech API sends audio to Google/Apple cloud — not on-device
 
-Known Limitations:
-- iOS Safari: SpeechRecognition may stop after periods of silence; requires restart logic
-- iOS Safari: getUserMedia() works but has quirks with AudioContext (must be resumed on user gesture)
-- Web Speech API sends audio to cloud (Google/Apple servers) — not on-device
-- Background tab behavior varies by OS — PWA "installed" mode helps on mobile
+---
 
-Mitigation for iOS issues:
-- Auto-restart recognition on silence timeout
-- Start AudioContext on first tap interaction
-- Show clear "listening" / "paused" status indicator
+## Connectivity & Error Handling
 
-
-Connectivity & Error Handling (NEW)
-
-Internet is required for both Web Speech API and Gemini API.
-
-When connectivity drops mid-session:
-- Live captions pause with a visible "Connection lost — reconnecting..." banner
+**When connection drops mid-session:**
+- Live captions pause with "Connection lost — reconnecting..." banner
 - App attempts reconnection every 2 seconds
-- When connection restores, recognition restarts automatically
-- Gap Filler queues unsent sentences and processes them on reconnection
-- No audio is lost during brief drops (<5 seconds) because the browser buffers mic input
+- When connection restores, STT restarts automatically
+- Gap Filler queues unsent sentences and processes on reconnection
+- No audio lost during brief drops (<5s) — browser buffers mic input
 
-When Gemini API rate limit is hit:
-- Gap Filler gracefully degrades — raw STT captions continue without AI corrections
-- UI shows subtle indicator: "AI enhancement paused"
+**When Gemini rate limit is hit:**
+- Gap Filler degrades gracefully — raw STT captions continue
+- UI shows "AI enhancement paused"
 - Captions remain fully functional, just without gap-filling
 
+---
 
-Success Metrics
+---
 
-Goal                            Signal                          Metric                      Target
-Accuracy                        Captions capture every          Caption accuracy rate        97%+
-                                word correctly
+# WEEK 1 — MVP Requirements
 
-Gap Filler Performance          AI correctly predicts           Gap Filler success rate      90%+
-                                missed words
+### Stop here if time runs short. This is a fully shippable product.
 
-Speed                           Captions appear immediately     Caption latency              Under 1 second
-                                after speech
+---
 
-User Trust                      Users trust what they see       Confidence Highlight         Users report
-                                without second-guessing         usefulness                   captions are
-                                                                                             trustworthy
+## User Journey 1: Starting a Live Caption Session
 
-Session Quality                 Users stay through              Average session length       10+ minutes
-                                full conversations
+**Context:** A Deaf user needs to start capturing speech immediately with zero friction — every second of delay is a word lost.
 
-Comprehension                   Users understood the full       Post-session survey score    85%+ positive
-                                conversation
+| Priority | Requirement |
+|----------|-------------|
+| **P0** | User can launch a live caption session in one tap |
+| **P0** | User sees a pre-prompt UI explaining why microphone access is needed before the browser permission dialog |
+| **P0** | User can see captions streaming word-by-word in real time with under 1 second latency |
+| **P0** | User can identify uncertain words through Confidence Highlighting (amber color) |
+| **P0** | User can visually distinguish AI-predicted/filled words (blue bg + underline) from confirmed words |
+| P1 | User can see a live summary line below main captions capturing the full meaning |
+| P2 | User can adjust caption text size, color, and display speed |
 
-Inclusion                       Users felt fully included       Post-session qualitative     85%+ positive
-                                in the conversation             feedback
+## User Journey 2: During a Caption Session
 
-Zero Lost Meaning               Users missed nothing            End-of-session "Did you      Trending toward
-                                important                       miss anything?"              0%
+| Priority | Requirement |
+|----------|-------------|
+| **P0** | User reads fully gap-filled captions where missed words are predicted by AI — activates automatically |
+| **P0** | User sees a clear "Listening..." indicator confirming active audio capture |
+| **P0** | User sees "Connection lost" warning if internet drops, and captions auto-resume on reconnection |
+| **P0** | User can tap any word to flag it as misheard |
+| **P0** | System captures speech clearly in noisy environments using RNNoise |
+| **P0** | System recognizes and correctly captions common academic terminology via Gemini domain prompting |
+| P1 | User can see speaker labels identifying who is talking |
+| P2 | User can tap any word to trigger a 3-Second Replay of that moment of audio |
 
+## User Journey 3: Ending a Session
 
-Requirements
+| Priority | Requirement |
+|----------|-------------|
+| **P0** | User can end a session in one tap |
+| **P0** | User sees session stats (duration, words captured, AI corrections) |
+| **P0** | User is prompted: "Did you miss anything important?" with YES / NO buttons |
+| P1 | User can review a full transcript immediately after session ends |
+| P2 | User can save or export the session transcript |
 
-Requirements are organized/prioritized by critical user journeys. For the 1-week MVP, only P0 items are in scope.
+## User Journey 4: Access & PWA
 
-Legend
-[P0] = MVP Week 1 — Live Captions, Gap Filler, Confidence Highlight
-[P1] = Post-MVP — Live Summary, Speaker ID, Session History
-[P2] = Future — 3-Second Replay, Export, Customization
+| Priority | Requirement |
+|----------|-------------|
+| **P0** | User can access Live Captions Pro from iOS Safari, Android Chrome, or desktop browser |
+| **P0** | User can install the PWA to their home screen in one tap |
+| **P0** | No account creation required — open the URL and start captioning |
+| P1 | User can create an account to save session history |
 
+## Week 1 MVP Scope Summary
 
-User Journey 1: Deaf User Starting a Live Caption Session
-
-Context: This is the most critical journey. A Deaf user needs to start capturing speech immediately with zero friction — every second of delay is a word lost. We are optimizing for speed, trust, and zero setup burden.
-
-Starting a Session:
-[P0] User can launch a live caption session in one tap
-[P0] User can see captions streaming word-by-word in real time with under 1 second latency
-[P0] User can identify which words are uncertain through Confidence Highlighting
-Uncertain words appear in a distinct color so the user knows to pay closer attention
-[P1] User can see a live summary line below the main captions capturing the full meaning of the conversation
-[P2] User can adjust caption text size, color, and display speed before or during a session
-
-During a Session:
-[P0] User can read fully gap-filled captions where missed words are predicted by AI using surrounding context
-Gap Filler activates automatically — no action required from user
-[P0] User can visually distinguish between confirmed words and AI-predicted words
-[P0] User sees a clear "Listening..." indicator confirming the app is actively capturing audio
-[P0] User sees a "Connection lost" warning if internet drops, and captions auto-resume on reconnection
-[P1] User can see speaker labels identifying who is talking in a multi-person conversation
-Labeled as Speaker 1, Speaker 2, or by name if identified
-[P2] User can tap any word to trigger a 3-Second Replay of that moment of audio
-Replay is silent to others in the room — private to the user only
-
-Ending a Session:
-[P0] User can end a session in one tap
-[P1] User can review a full transcript of the session immediately after it ends
-[P1] User can submit feedback on caption accuracy after each session
-Includes a simple "Did you miss anything important?" prompt
-[P2] User can save or export the session transcript
-
-
-User Journey 2: Hearing Secondary User Speaking into Live Captions Pro
-
-Context: The hearing speaker — doctor, professor, manager — is a secondary user whose behavior directly affects caption quality. They need to speak naturally without changing their rhythm or workflow. We are optimizing for zero friction on their end.
-
-Before Speaking:
-[P0] Hearing user can activate microphone input with one tap
-[P0] Hearing user receives a clear visual confirmation that Live Captions Pro is actively listening
-[P1] Hearing user can select their role — doctor, professor, manager — to activate vertical-specific vocabulary optimization
-
-During Speaking:
-[P0] Hearing user can speak naturally without slowing down or repeating themselves
-[P0] System captures speech clearly even in noisy environments using RNNoise AI noise filtering
-[P1] Hearing user can see a basic confirmation that their words are being captured and streamed
-[P2] Hearing user can pause the microphone temporarily without ending the session
-
-
-User Journey 3: Using Live Captions Pro in a High-Stakes Vertical
-
-Context: For the MVP, we are targeting the education vertical. A Deaf college student in a lecture hall is our primary scenario. Healthcare, legal, and workplace verticals are future expansion targets.
-
-Vertical-Specific Accuracy (Education):
-[P0] System recognizes and correctly captions common academic terminology (course-specific jargon, proper nouns, acronyms)
-This is achieved through Gemini API context prompting with "education/lecture" domain hints — not a custom dictionary in v1
-[P0] User can flag a misheard word by tapping it to trigger a re-evaluation by Gap Filler
-[P1] System learns from flagged corrections over time to improve accuracy for that user
-[P2] Admin or institution can configure a custom vocabulary list for their environment
-
-Access:
-[P0] User can access Live Captions Pro from a mobile device (iOS Safari, Android Chrome) or desktop browser
-[P0] User can install the PWA to their home screen for app-like experience with one tap
-[P0] No account creation required — open the URL and start captioning
-[P1] User can create an account to save session history
-[P2] Users can invite a hearing speaker to join a shared session remotely
-
-
-MVP Scope — 1 Week, 2 People (NEW)
-
-What's in (P0 only):
+**In scope (P0 only):**
 - PWA shell with responsive mobile-first UI
 - One-tap session start/stop
+- Mic permission pre-prompt UI
 - Real-time captions via Web Speech API
 - RNNoise noise suppression
-- Gap Filler via Gemini API (async post-processing on completed sentences)
+- Gap Filler via Gemini API (async, post-processing)
 - Confidence Highlighting (color-coded word certainty)
-- Visual distinction between confirmed and AI-predicted words
-- Connection status indicator (listening/paused/disconnected)
-- Auto-reconnect on connection drop
+- Visual distinction: confirmed vs. AI-predicted words
+- Connection status indicator (listening / paused / disconnected)
+- Auto-reconnect + Gap Filler offline queue
 - Tap-to-flag misheard word
+- Session stats + YES/NO feedback prompt
 - Installable PWA (manifest + service worker)
+- Deployed to Vercel
 
-What's out (P1/P2 — post-MVP):
-- User accounts and authentication
-- Session history and transcript storage
+**Out of scope for Week 1:**
 - Speaker identification / diarization
-- Live summary
-- 3-Second Replay
-- Text size/color customization
-- Export/save transcripts
-- Custom vocabulary lists
 - Multi-user shared sessions
-- Offline support
-- Non-English languages
+- Deepgram integration
+- Smart FIFO multi-speaker display
+- User accounts, session history, export
+- Live summary, 3-Second Replay
+- Offline support, non-English languages
 
-Suggested Work Split:
-- Person A: PWA setup, UI/UX, caption display, session flow, PWA manifest/service worker
-- Person B: Audio pipeline (Web Audio API + RNNoise), Web Speech API integration, Gemini API gap filler, connection handling
+---
 
+---
 
-Appendix
-Designs:
-Meeting notes:
-Other resources:
-- Web Speech API docs: https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API
+# WEEK 2 — Feature Expansion Requirements
+
+### Built on top of the Week 1 MVP. Do not start until Week 1 is shipped.
+
+---
+
+## Feature 1 — Smart FIFO Caption Display
+
+### Problem
+When multiple speakers talk in sequence, captions need to remain readable without cluttering the screen. Traditional systems either wipe on each utterance or stack until overflow.
+
+### Goal
+A rolling caption display that anchors new speaker lines to the bottom, pushes older lines upward, and fades them progressively — mimicking real broadcast caption behavior.
+
+### User Stories
+- As a viewer, I see the current speaker's words at the bottom so I always know what is being said right now
+- As a viewer, I see the previous 4–6 lines above for context
+- As a viewer, older lines fade so my eye is drawn to the most recent caption
+- As an operator, the display trims automatically — I never manually clear the screen
+
+### Functional Requirements
+
+| ID | Requirement |
+|----|-------------|
+| F1.1 | New caption lines always appear at the bottom of the stage |
+| F1.2 | Existing lines shift upward when a new line is added |
+| F1.3 | Maximum of 6 lines visible at any time |
+| F1.4 | Lines fade progressively by age: newest=1.0, then 0.65, 0.52, 0.39, 0.26, 0.13 |
+| F1.5 | When MAX_LINES exceeded, oldest line is removed from DOM |
+| F1.6 | Each line displays a speaker name tag in that speaker's assigned color |
+| F1.7 | Words rendered as colored block highlights matching the speaker's color |
+| F1.8 | Interim (unconfirmed) words appear as ghost tokens with dashed borders |
+| F1.9 | A blinking cursor appears at the end of the active line while speech is captured |
+| F1.10 | Lines animate in with a 0.2s slide-up transition |
+
+### Non-Functional Requirements
+- Display updates within 100ms of receiving a new word token
+- Renders correctly from iPhone SE (375px) to iPad Pro (1366px)
+- No external libraries for FIFO logic — vanilla JS only
+
+### Out of Scope
+- Scrollable transcript history
+- Persistent caption storage or export
+
+---
+
+## Feature 2 — Dual-Mode Speech Recognition Engine
+
+### Problem
+Different use cases need different STT capability. A single operator at a small event needs a free, instant solution. A production deployment with multiple speakers needs automatic diarization. One product must support both.
+
+### Goal
+Two selectable speech recognition modes: free browser-based (Web Speech API + manual speaker assignment) and premium real-time (Deepgram WebSocket + auto diarization).
+
+---
+
+### Version 1 — Web Speech API + Manual Speaker Switching
+
+**How it works:** Browser's built-in `webkitSpeechRecognition` captures audio. Operator taps a speaker button to assign the correct color and name to the caption line.
+
+**User Stories:**
+- As an operator, I tap a speaker button to assign who is talking — their captions appear in the correct color
+- As an operator, I switch speakers mid-session without stopping the caption stream
+- As a viewer, I see each speaker's words in their assigned color immediately as they speak
+- As an operator, I can use this free with no API key required
+
+| ID | Requirement |
+|----|-------------|
+| F2.1 | App requests mic permission on first launch using `getUserMedia` |
+| F2.2 | Audio constraints: `echoCancellation: true`, `noiseSuppression: true`, `autoGainControl: true`, `sampleRate: 16000` |
+| F2.3 | Recognition runs in `continuous` mode with `interimResults: true` |
+| F2.4 | `maxAlternatives` set to 3 for improved accuracy at 6–8 ft range |
+| F2.5 | Recognition auto-restarts on `onend` while session is active (handles iOS Safari timeout) |
+| F2.6 | Tapping a speaker button mid-session starts a new caption line for that speaker |
+| F2.7 | Lines longer than 8 words automatically break into a new line |
+| F2.8 | Interim words display as ghost tokens; replaced by final words on confirmation |
+| F2.9 | Mic status bar shows current state: READY / LISTENING / WAITING / ERROR |
+| F2.10 | Works on iPhone and iPad Safari without external hardware |
+
+**Constraints:** Safari (iOS/macOS) and Chrome (desktop) only. No auto diarization. Audio processed by Google/Apple servers.
+
+---
+
+### Version 2 — Deepgram WebSocket + Auto Diarization
+
+**How it works:** Audio streamed in real-time over WebSocket to Deepgram. Returns word-level transcriptions with speaker labels automatically mapped to the 4 speaker color profiles.
+
+**User Stories:**
+- As an operator, I enter my Deepgram API key once and the system automatically identifies who is speaking
+- As a viewer, I see caption lines automatically assigned to the correct speaker color
+- As an operator, I can map Deepgram speaker IDs (0–3) to custom speaker names and colors
+- As an operator, I receive a warning if the WebSocket drops and the system reconnects automatically
+
+| ID | Requirement |
+|----|-------------|
+| F2.11 | User enters Deepgram API key in a settings panel; key stored in `localStorage` |
+| F2.12 | App opens WebSocket to `wss://api.deepgram.com/v1/listen` |
+| F2.13 | WebSocket params: `diarize=true`, `punctuate=true`, `interim_results=true`, `encoding=linear16`, `sample_rate=16000` |
+| F2.14 | Audio captured via `AudioWorkletNode` or `ScriptProcessorNode`, sent as raw PCM over socket |
+| F2.15 | Deepgram `speaker` field (0–3) maps automatically to the 4 speaker profiles |
+| F2.16 | New speaker line is created when `speaker` value changes between word results |
+| F2.17 | If WebSocket closes unexpectedly, app shows reconnecting indicator and retries: 1s → 2s → 4s backoff |
+| F2.18 | API key field is masked after entry; user can clear/reset via a button |
+| F2.19 | Cost estimate displayed to operator (~$0.0043/min) |
+| F2.20 | Falls back to Version 1 automatically if no API key is present; shows "DEMO MODE" badge |
+
+**Constraints:** Requires Deepgram API key and internet. Diarization accuracy varies with overlapping speech. Deepgram identifies up to 8 speakers; Pro Captions maps the first 4.
+
+---
+
+## Feature 3 — Standalone Mobile Viewer App for End Users
+
+### Problem
+Pro Captions currently exists only within the operator's interface. End users — audience members, students, event attendees — have no way to access live captions on their own devices.
+
+### Goal
+Deploy Pro Captions as a standalone PWA that users open via shared link or QR code, install to their home screen, and use independently. Connects to the operator's session and displays captions in real time.
+
+### User Stories
+- As an event attendee, I scan a QR code to open Pro Captions on my iPhone — no App Store needed
+- As an event attendee, I add Pro Captions to my home screen so it behaves like a native app
+- As a Deaf or hard-of-hearing user, I read live captions on my own device
+- As an operator, I generate a shareable session link or QR code from the dashboard
+- As an operator, I see how many users are connected to the live session
+- As a user, I choose my preferred caption font size (SM / MD / LG / XL)
+- As a user, the app works in landscape and portrait on iPhone and iPad
+
+| ID | Requirement |
+|----|-------------|
+| F3.1 | App deployed as PWA with valid `manifest.json` and service worker |
+| F3.2 | `apple-mobile-web-app-capable` meta tag enables full-screen mode when added to home screen |
+| F3.3 | Operator generates a unique session ID; users join via `https://procaptions.app/s/[ID]` |
+| F3.4 | Caption data broadcast from operator to user devices via WebSocket session server |
+| F3.5 | User device displays caption lines in FIFO format identical to operator view |
+| F3.6 | User can adjust font size with a size toggle button (SM / MD / LG / XL) or pinch gesture |
+| F3.7 | App works in portrait and landscape with responsive layout |
+| F3.8 | Screen does not sleep while session is active (WakeLock API where supported) |
+| F3.9 | If session connection drops, app shows "Reconnecting…" state and retries automatically |
+| F3.10 | Operator dashboard shows active user count for the session |
+| F3.11 | Session expires 30 minutes after operator ends it; users see a "Session Ended" screen |
+| F3.12 | No login or account required for users to join |
+| F3.13 | QR code for the session URL is generated and displayable on operator screen |
+
+### Non-Functional Requirements
+- App loads in under 3 seconds on standard LTE
+- Supports iOS 15+ (Safari) and Android Chrome 90+
+- Caption latency from operator speech to user screen: under 500ms on same WiFi
+- Fully usable without native App Store install
+
+### Out of Scope (V1)
+- User accounts or saved session history
+- In-session chat or feedback from users to operator
+- Offline caption playback
+- Android native app
+
+---
+
+## Success Metrics
+
+### Week 1 — Product-Level
+
+| Goal | Signal | Metric | Target |
+|------|--------|--------|--------|
+| Accuracy | Captions capture every word | Caption accuracy rate | 97%+ |
+| Gap Filler | AI correctly predicts missed words | Gap Filler success rate | 90%+ |
+| Speed | Captions appear immediately | Caption latency | < 1 second |
+| User Trust | Users trust what they see | Confidence Highlight usefulness | Users report captions trustworthy |
+| Session Quality | Users stay through full conversations | Average session length | 10+ minutes |
+| Comprehension | Users understood the full conversation | Post-session survey | 85%+ positive |
+| Zero Lost Meaning | Users missed nothing important | "Did you miss anything?" | Trending toward 0% |
+
+### Week 2 — Feature-Level
+
+| Feature | Metric | Target |
+|---------|--------|--------|
+| Smart FIFO display | Caption line render time | < 100ms |
+| Web Speech (V1) | Word recognition accuracy at 6–8 ft | ≥ 80% |
+| Deepgram (V2) | Speaker diarization accuracy (2+ speakers) | ≥ 90% |
+| Mobile Viewer PWA | Session join time (link → captions visible) | < 5 seconds |
+| Mobile Viewer PWA | User retention per session | ≥ 85% stay connected |
+
+---
+
+## Dependencies
+
+| Feature | Dependency |
+|---------|------------|
+| Web Speech API | Safari 14.5+ / Chrome 90+ |
+| RNNoise | AudioWorklet support (all modern browsers) |
+| Gemini Gap Filler | Google Gemini API key (free tier) |
+| Deepgram (Week 2) | Deepgram API key + internet connection |
+| PWA deployment | HTTPS hosting, `manifest.json`, service worker |
+| Session sharing (Week 2) | WebSocket session server |
+| WakeLock (Week 2) | iOS 16.4+ Safari |
+
+---
+
+## Appendix
+
+- Web Speech API: https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API
 - RNNoise: https://jmvalin.ca/demo/rnnoise/
 - Gemini API: https://ai.google.dev/
+- Deepgram API: https://developers.deepgram.com/
 - Next.js PWA guide: https://nextjs.org/docs
 - Vercel deployment: https://vercel.com

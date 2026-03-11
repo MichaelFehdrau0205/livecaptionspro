@@ -48,9 +48,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     rawText = result.response.text();
   } catch (err: unknown) {
     const error = err as Error & { status?: number };
-    console.error('[gap-filler] Gemini error:', error?.message, 'status:', error?.status);
-    if (error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('Resource has been exhausted')) {
+    const isRateLimit = error?.status === 429
+      || error?.message?.includes('quota')
+      || error?.message?.includes('Resource has been exhausted');
+
+    if (isRateLimit) {
+      console.warn('[gap-filler] Rate limited by Gemini — pausing gap filler for 60s');
       return NextResponse.json({ ...fallbackResponse(sentence), rateLimited: true });
+    }
+
+    if (error?.message === 'timeout') {
+      console.warn('[gap-filler] Gemini timeout after', GEMINI_TIMEOUT_MS, 'ms — using fallback');
+    } else {
+      console.error('[gap-filler] Gemini error:', error?.message, '| status:', error?.status);
     }
     return NextResponse.json(fallbackResponse(sentence));
   }
@@ -58,14 +68,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Retry once on invalid JSON
   let parsed = parseGapFillerResponse(rawText, sentence);
   if (parsed.correctedSentence === sentence && rawText.trim()) {
-    // Potentially malformed — one retry
+    console.warn('[gap-filler] Malformed JSON from Gemini — retrying once. Raw:', rawText.slice(0, 100));
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
       const retryResult = await model.generateContent(prompt);
       parsed = parseGapFillerResponse(retryResult.response.text(), sentence);
-    } catch {
-      // Give up — fallback already set
+    } catch (retryErr: unknown) {
+      const e = retryErr as Error;
+      console.error('[gap-filler] Retry also failed:', e?.message, '— using fallback');
     }
   }
 
