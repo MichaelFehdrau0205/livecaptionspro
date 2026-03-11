@@ -1,8 +1,9 @@
-# Live Captions Pro — 5-Day Sprint Plan (Luba & Michael)
+# Live Captions Pro — 2-Week Sprint Plan (Luba & Michael)
 
 **Branch:** `lubaPlan`
 **Start Date:** March 10, 2026
-**Reference:** TDD.md, PRD2.md
+**Reference:** TDD.md, PRD2.md, PRD3.md
+**Week 1 = MVP. Ship here if time runs short. Week 2 = V2 features.**
 
 ---
 
@@ -29,21 +30,17 @@
 
 | # | Gap | What's wrong | PRD requirement |
 |---|-----|-------------|-----------------|
-| 1 | **RNNoise is a placeholder** | `audio-processor.js` is a pass-through — does zero noise suppression. Just copies input to output. | "RNNoise WASM for noise suppression" / "System captures speech clearly even in noisy environments" |
-| 2 | **STT doesn't restart on reconnect** | `useConnectionStatus` detects online/offline, but `SessionContext` never reacts — STT stays dead after connection drop | "Captions auto-resume on reconnection" |
-| 3 | **Gap Filler doesn't queue offline** | If offline when a sentence finalizes, `useGapFiller` silently fails. No queue. Sentence is lost forever. | "Gap Filler queues unsent sentences and processes them on reconnection" |
-| 4 | **Feedback buttons do nothing** | SessionEndScreen YES/NO buttons have no `onClick`. No tracking, no confirmation, nothing happens. | "End-of-session 'Did you miss anything?' prompt" |
-| 5 | **No mic permission pre-prompt** | `startSession` calls `getUserMedia` directly. No UI explaining why mic is needed — user just gets a browser popup. | "Show pre-prompt UI explaining why mic is needed" |
-| 6 | **No reconnection restart for STT** | When connection drops and comes back, speech recognition stays stopped. User has to manually end + restart session. | "When connection restores, recognition restarts automatically" |
-| 7 | **domain param unused** | API route destructures `domain` but never uses it in the Gemini prompt. Lint warning. | "Education/lecture domain hints" |
-| 8 | **Service worker is minimal** | Only caches `/` and `/manifest.json`. Doesn't cache JS/CSS bundles for real offline app shell. | "Service worker caches app shell (HTML, CSS, JS bundles) for instant repeat loads" |
-| 9 | **No iOS splash screens** | `public/splash/` directory doesn't exist | TDD specifies splash screens for iOS |
-| 10 | **Not deployed** | No Vercel deployment, no env vars set, no production URL | "Deploy to Vercel" |
-| 11 | **8 test files missing** | TDD specifies test files that don't exist | Testing strategy in TDD |
-| 12 | **No accessibility audit done** | Components have some aria-labels but no systematic audit | "WCAG AA, Lighthouse > 90" |
-
-### File Structure Assessment
-The current structure is **correct** for this app. Next.js App Router co-locates API routes with frontend by design. The "backend" is a single serverless function (`src/app/api/gap-filler/route.ts`). Splitting into `frontend/` and `backend/` folders would fight the framework. No change needed.
+| 1 | **RNNoise is a placeholder** | `audio-processor.js` is a pass-through — does zero noise suppression | "RNNoise WASM for noise suppression" |
+| 2 | **STT doesn't restart on reconnect** | `useConnectionStatus` detects online/offline, but `SessionContext` never reacts | "Captions auto-resume on reconnection" |
+| 3 | **Gap Filler doesn't queue offline** | If offline when a sentence finalizes, sentence is lost forever | "Gap Filler queues unsent sentences and processes them on reconnection" |
+| 4 | **Feedback buttons do nothing** | SessionEndScreen YES/NO buttons have no `onClick` | "End-of-session 'Did you miss anything?' prompt" |
+| 5 | **No mic permission pre-prompt** | `startSession` calls `getUserMedia` directly with no explanation UI | "Show pre-prompt UI explaining why mic is needed" |
+| 6 | **domain param unused** | API route destructures `domain` but never passes it to Gemini prompt | "Education/lecture domain hints" |
+| 7 | **Service worker is minimal** | Only caches `/` and `/manifest.json` | "Service worker caches app shell for instant repeat loads" |
+| 8 | **No iOS splash screens** | `public/splash/` directory doesn't exist | TDD specifies splash screens for iOS |
+| 9 | **Not deployed** | No Vercel deployment, no env vars set, no production URL | "Deploy to Vercel" |
+| 10 | **8 test files missing** | TDD specifies test files that don't exist | Testing strategy in TDD |
+| 11 | **No accessibility audit done** | Components have some aria-labels but no systematic audit | "WCAG AA, Lighthouse > 90" |
 
 ---
 
@@ -57,67 +54,84 @@ This keeps each person in separate files to minimize merge conflicts.
 | Owner | Files they own |
 |-------|---------------|
 | **Michael** | `src/components/*`, `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/globals.css`, `e2e/*`, `public/splash/`, `public/manifest.json` |
-| **Luba** | `src/hooks/*`, `src/app/api/*`, `src/context/*`, `src/lib/*`, `public/sw.js`, `public/audio-processor.js`, `.github/*`, Vercel config |
+| **Luba** | `src/hooks/*`, `src/app/api/*`, `src/context/*`, `src/lib/*`, `public/sw.js`, `public/audio-processor.js`, `.github/*`, Vercel config, `server/*` (Week 2) |
 
 **Shared** (coordinate before editing): `src/types/index.ts`, `package.json`
 
 ---
 
+## Sync Points — When You Need to Coordinate
+
+| Day | Sync needed | Why | How long |
+|-----|------------|-----|----------|
+| Day 1 start | Types sync | Both touching `src/types/index.ts` | 10 min chat — Luba commits types first, Michael adds `feedbackGiven` after |
+| Day 3 start | Michael pulls Luba's branch | Michael writes `SessionContext.test.tsx` but Luba has been modifying `SessionContext.tsx` | Pull before writing tests |
+| Day 4 start | Luba merges Days 1–3 PRs | Michael's E2E tests need STT reconnect + gap filler queue to actually work | Luba merges by end of Day 3 |
+| Day 9 start | API contract for session server | Michael builds viewer app, needs to know WebSocket message format | 30 min — agree on message schema before Day 8 |
+| Day 10 | Integration day | Deepgram + FIFO + viewer all working together | Work together, not in parallel |
+
+**Day-to-day: 90% parallel.** File ownership is the protection.
+
+---
+
 ## Pre-Requisite: Gemini API Key
 
-The Gap Filler (and therefore all color-coded confidence highlighting) requires a Google Gemini API key. Without it, every word shows as plain white "confirmed" text — no corrections, no colors.
+The Gap Filler requires a Google Gemini API key. Without it, every word shows as plain white — no corrections, no colors.
 
 **How to get it (free):**
 1. Go to Google AI Studio (aistudio.google.com)
-2. Sign in with Google account → "Get API Key" → "Create API key"
-3. Free tier: Gemini 2.5 Flash — 250 requests/day, 10 requests/minute (enough for MVP)
+2. Sign in → "Get API Key" → "Create API key"
+3. Free tier: Gemini 2.5 Flash — 250 requests/day, 10 requests/minute
 
 **Where to set it:**
-- **Local dev**: create `.env.local` in project root → `GEMINI_API_KEY=your_key_here`
+- **Local dev**: `.env.local` → `GEMINI_API_KEY=your_key_here`
 - **Vercel (Day 4)**: Settings → Environment Variables → add `GEMINI_API_KEY`
 
-**Important**: `.env.local` is already in `.gitignore` — never commit API keys.
+`.env.local` is already in `.gitignore` — never commit API keys.
 
 ---
 
-## Color-Coded Confidence Highlighting (already implemented)
+## Color-Coded Confidence Highlighting
 
-This is a core differentiator from the PRD. The full pipeline is wired:
+| Word Type | Color | When |
+|-----------|-------|------|
+| **Confirmed** (>90%) | White | Gemini agrees the word is correct |
+| **Uncertain** (70–90%) | Amber/orange | Gemini thinks the word might be wrong |
+| **Predicted** (<70% or AI-filled) | Blue bg + blue underline | Gemini added or replaced a word |
+| **Flagged** (user tapped) | Red underline | User tapped a word to flag it |
 
-| Word Type | Color | When | Example |
-|-----------|-------|------|---------|
-| **Confirmed** (>90% confidence) | White text (default) | Gemini agrees the word is correct | "the", "government" |
-| **Uncertain** (70-90% confidence) | Amber/orange text | Gemini thinks the word might be wrong | a word that sounds similar to another |
-| **Predicted** (<70% or AI-filled) | Blue background + blue underline | Gemini added or replaced a word | a dropped word Gemini filled in |
-| **Flagged** (user tapped) | Red underline | User tapped a word to flag it | any word the user doesn't trust |
-
-Code locations: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14-20` (rendering), `constants.ts:2-3` (thresholds).
-
-**Status**: Code is done. Needs real-speech testing (Day 5) to verify the colors are readable and the thresholds feel right during an actual lecture. Michael should tune if needed.
+Code: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14-20` (rendering), `constants.ts:2-3` (thresholds).
 
 ---
 
-## Day-by-Day Plan
+---
+
+# WEEK 1 — MVP (Days 1–5)
+### Stop here if time runs short. This ships a working, deployed app.
+
+---
 
 ### Day 1 (Tue, Mar 10) — Fix Critical Feature Gaps
 
+> **Sync at start of day:** Luba commits type changes to `src/types/index.ts` first, then Michael adds `feedbackGiven`.
+
 **Michael — Mic Permission UX + Feedback Buttons + Component Tests**
 - [ ] **Build mic permission pre-prompt modal** in `StartScreen.tsx`
-  - Before calling `startSession`, show a dialog: "Live Captions Pro needs microphone access to capture speech. Your audio is processed locally — no audio is sent to our servers."
+  - Before calling `startSession`, show dialog: "Live Captions Pro needs microphone access. Your audio is processed locally — no audio is sent to our servers."
   - "Allow Microphone" button → calls `startSession` → triggers `getUserMedia`
-  - Handles denial gracefully (show error message, let user retry)
-  - Use clear, reassuring wording that explains why mic access is needed
+  - Handle denial gracefully (show error message, let user retry)
+  - Auto-detect previously granted permission via `navigator.permissions`
 - [ ] **Wire up feedback buttons** in `SessionEndScreen.tsx`
-  - YES button: show a brief "Thanks for your feedback" message, track in session stats
-  - NO button: show "Great!" message, track in session stats
-  - Add `feedbackGiven: 'yes' | 'no' | null` to `SessionState` or handle locally
+  - YES button: show "Thanks for your feedback!", track in session stats
+  - NO button: show "Great!", track in session stats
+  - Add `feedbackGiven: 'yes' | 'no' | null` to `SessionState`
 - [ ] **Write `SessionEndScreen.test.tsx`** — renders stats, buttons work, feedback flow
 - [ ] **Write `ControlBar.test.tsx`** — mic indicator states, end session fires
 
 **Luba — STT Auto-Reconnect + Gap Filler Queue**
 - [ ] **Implement STT auto-restart on reconnect** in `SessionContext.tsx`
-  - Watch `connectionStatus` — when it transitions from 'lost'/'reconnecting' → 'connected', call `startSTT()` again
-  - When it transitions to 'lost', call `stopSTT()` (no point running STT without network)
+  - Watch `connectionStatus` — when it transitions 'lost'/'reconnecting' → 'connected', call `startSTT()` again
+  - When it transitions to 'lost', call `stopSTT()`
   - Show status transitions in StatusBar automatically
 - [ ] **Implement Gap Filler offline queue** in `useGapFiller.ts`
   - When fetch fails due to network, push `{ lineId, sentence }` to a queue (ref)
@@ -130,93 +144,83 @@ Code locations: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14
 
 ### Day 2 (Wed, Mar 11) — PWA Polish + Caption UX + Core Tests
 
-**Michael — Caption UX Polish + Component Tests**
+**Michael — Caption UX Polish + iOS Splash + Component Tests**
 - [ ] **Add iOS splash screen images** to `public/splash/`
-  - Generate splash screens for common iOS sizes (iPhone SE, 13/14/15, iPad)
+  - Generate splash screens for iPhone SE, 13/14/15, iPad
   - Add `<link rel="apple-touch-startup-image">` tags to `layout.tsx`
-- [ ] **Polish caption display UX** — refine the reading experience:
-  - Is the interim text (gray/italic) readable enough? Adjust opacity/style if needed
+- [ ] **Polish caption display UX**
+  - Is interim text (gray/italic) readable? Adjust opacity/style if needed
   - Is the blinking cursor helpful or distracting? Tune or remove
-  - Does the auto-scroll feel natural? Test with rapid speech
-  - Is the predicted word highlight (blue bg + underline) clear but not overwhelming?
+  - Does auto-scroll feel natural? Test with rapid speech
+  - Is predicted word highlight (blue bg + underline) clear but not overwhelming?
 - [ ] **Write `CaptionArea.test.tsx`** — renders lines, shows interim text, auto-scroll
 - [ ] **Write `SessionScreen.test.tsx`** — renders StatusBar/CaptionArea/ControlBar, flag word works
 
 **Luba — RNNoise + Service Worker + Hook Tests**
-- [ ] **Integrate real RNNoise WASM** into `public/audio-processor.js`
-  - Replace placeholder with actual RNNoise WASM processor
-  - Download RNNoise WASM binary, load in AudioWorklet
-  - Fall back gracefully if WASM fails to load (current browser noise suppression as fallback)
-  - Test that audio quality improves in noisy environments
+- [x] **Integrate real RNNoise WASM** into `public/audio-processor.js`
+  - Uses `@jitsi/rnnoise-wasm` — `rnnoise-sync.js` + `rnnoise.wasm` copied to `public/`
+  - AudioWorklet loads as ES module (`{ type: 'module' }`), processes 480-sample frames
+  - Falls back to pass-through if WASM unavailable
 - [ ] **Enhance service worker** (`public/sw.js`)
-  - Cache all static assets (JS bundles, CSS, fonts, icons) — not just `/` and `/manifest.json`
-  - Use network-first strategy for API routes, cache-first for static assets
+  - Cache all static assets (JS bundles, CSS, fonts, icons)
+  - Network-first for API routes, cache-first for static assets
   - Add version bump mechanism for cache invalidation
 - [ ] **Write `useSpeechRecognition.test.ts`**
   - Mock SpeechRecognition constructor
-  - Test onInterim/onFinal callbacks
-  - Test auto-restart on unexpected end (iOS)
-  - Test unsupported browser handling
+  - Test onInterim/onFinal callbacks, auto-restart on unexpected end (iOS), unsupported browser
 - [ ] **Write `useAudioPipeline.test.ts`**
   - Mock getUserMedia + AudioContext
-  - Test start/stop lifecycle + cleanup
-  - Test permission denied error handling
+  - Test start/stop lifecycle + cleanup, permission denied error handling
 
 ---
 
 ### Day 3 (Thu, Mar 12) — Accessibility + Integration Tests + Polish
 
-**Michael — Accessibility Audit + UI Polish (user perspective)**
+> **Sync at start of day:** Michael pulls Luba's branch before writing `SessionContext.test.tsx`.
+
+**Michael — Accessibility Audit + UI Polish**
 - [ ] **Full accessibility audit** on all components
-  - Verify `aria-live="polite"` on CaptionArea — does it announce captions naturally?
-  - Verify all buttons have `aria-label` (most do — check ControlBar mic indicator)
+  - Verify `aria-live="polite"` on CaptionArea
+  - Verify all buttons have `aria-label`
   - Verify color contrast WCAG AA: 4.5:1 for body text, 3:1 for large text
-  - Predicted words: verify they have **both** underline AND highlight (PRD requires this — currently CaptionLine has both ✓)
-  - Uncertain/orange words: verify contrast ratio against dark background
-  - Are the visual distinctions between word types clear enough at a glance during a fast lecture?
-- [ ] **Touch target audit** — ensure all interactive elements are min 44x44px
-  - CaptionLine words: currently `inline` spans — may be too small to tap. Add padding?
-  - ControlBar buttons: currently min-h-[56px] ✓
-  - Start/End buttons: currently min-h-[56px] ✓
-- [ ] **Safe area insets** — verify `env(safe-area-inset-bottom)` works on ControlBar
-  - Add `env(safe-area-inset-top)` to StatusBar for notched phones
+  - Predicted words: verify both underline AND highlight
+  - Uncertain/orange words: verify contrast against dark background
+- [ ] **Touch target audit** — all interactive elements min 44×44px
+  - CaptionLine words: currently `inline` spans — may be too small. Add padding.
+  - ControlBar, Start/End buttons: currently min-h-[56px] ✓
+- [ ] **Safe area insets** — verify `env(safe-area-inset-bottom)` on ControlBar, add `env(safe-area-inset-top)` to StatusBar
 - [ ] **Run Lighthouse audit**, fix issues (target: PWA > 90, Accessibility > 90)
 - [ ] **Write `SessionContext.test.tsx`** — full integration: start/end session, gap filler dispatch
 
 **Luba — API Integration Tests + Gap Filler Hardening**
 - [ ] **Write `route.integration.test.ts`** for `/api/gap-filler`
   - Mock GoogleGenerativeAI — test correct Gemini call
-  - Test timeout handling (>5s → fallback)
-  - Test rate limit (429 → fallback + rateLimited flag)
-  - Test malformed JSON → retry once → fallback
-  - Test missing sentence → 400
-  - Test missing API key → graceful fallback
+  - Test timeout (>5s → fallback), rate limit (429 → fallback + rateLimited flag)
+  - Test malformed JSON → retry once → fallback, missing sentence → 400, missing API key → graceful fallback
 - [ ] **Write `useGapFiller.test.ts`**
-  - Test fetch call with correct payload
-  - Test onResult callback
-  - Test rate limit pause behavior
-  - Test offline queue + flush
+  - Test fetch call, onResult callback, rate limit pause, offline queue + flush
 - [ ] **Write `useWakeLock.test.ts`** + **`useSessionTimer.test.ts`**
-- [ ] **Harden gap filler error messages** — add better logging for debugging in production
+- [ ] **Harden gap filler error messages** — better logging for production debugging
 
 ---
 
 ### Day 4 (Fri, Mar 13) — E2E Tests + Deployment
 
+> **Sync at start of day:** Luba merges Days 1–3 PRs so Michael's E2E tests run against real features.
+
 **Michael — E2E Test Suite**
 - [ ] **Expand `e2e/session.spec.ts`**
-  - Full happy path: start → mic permission prompt → captions stream → gap filler highlights predicted words → end → stats screen shows word count + corrections
-  - Test connection lost banner appears (mock offline event)
+  - Full happy path: start → mic permission prompt → captions stream → gap filler highlights → end → stats
+  - Test connection lost banner (mock offline event)
   - Test session timer increments
   - Test tap-to-flag word turns red
 - [ ] **Expand `e2e/mobile.spec.ts`**
-  - iPhone viewport (375x812): all touch targets >= 44px
+  - iPhone viewport (375×812): all touch targets >= 44px
   - Caption area scrolls to bottom on new text
-  - ControlBar is in thumb-reachable zone (bottom of screen)
+  - ControlBar is in thumb-reachable zone
   - Verify safe area padding renders
 - [ ] **Add `e2e/pwa.spec.ts`**
-  - PWA manifest detected by browser
-  - Service worker registers and activates
+  - PWA manifest detected, service worker registers and activates
   - App shell loads from cache on repeat visit
 - [ ] **Test mic pre-prompt dialog** in E2E — dialog shows, buttons work
 
@@ -231,78 +235,243 @@ Code locations: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14
   - Verify service worker caches correctly
 - [ ] **Test preview deploys** — push a PR branch, verify Vercel preview URL works
 - [ ] **Verify CI pipeline** — push a PR, confirm GitHub Actions runs lint + test + e2e
-- [ ] **Set up Vercel domain** (optional: custom domain or use `.vercel.app`)
 
 ---
 
 ### Day 5 (Sat, Mar 14) — Real Device Testing + Bug Fixes + Launch
 
-**Michael — Real Device Testing as Target User (most critical day)**
-- [ ] **Test on real iPhone (Safari)** — full end-to-end user flow:
+**Michael — Real Device Testing (most critical day)**
+- [ ] **Test on real iPhone (Safari)** — full end-to-end:
   - Mic permission pre-prompt → does the explanation feel trustworthy?
   - AudioContext resume on tap (iOS requires user gesture)
   - STT auto-restart on silence (iOS stops after ~5s)
   - PWA "Add to Home Screen" → standalone mode
-  - Caption display — is it readable during a real conversation?
-  - Auto-scroll — does it keep up? Is it disorienting?
-  - Safe area insets (notch, home indicator)
-  - Tap-to-flag words — is it easy to flag without accidentally flagging neighbors?
-  - Session end → stats → are the numbers meaningful?
-  - Gap filler corrections — do they actually improve comprehension?
-- [ ] **Test with real speech** — have someone speak sample lecture content, verify:
+  - Caption display readability, auto-scroll, safe area insets
+  - Tap-to-flag words, session end → stats
+  - Gap filler corrections — do they improve comprehension?
+- [ ] **Test with real speech** — sample lecture content:
   - Captions appear in < 1 second
-  - Gap filler corrections are sensible
-  - Confidence highlighting: can you tell at a glance which words are certain vs. predicted?
-  - Does the overall experience feel like "zero lost meaning"?
-- [ ] **Test on iPad Safari** — portrait + landscape layouts
-- [ ] **Fix any UX bugs found** — prioritize what hurts the reading experience most
+  - Confidence highlighting readable at a glance
+- [ ] **Test on iPad Safari** — portrait + landscape
+- [ ] **Fix any UX bugs found** — prioritize reading experience
 - [ ] **Run final Lighthouse PWA audit** — target score > 90
 
 **Luba — Android Testing + Final Deploy + README**
 - [ ] **Test on real Android device (Chrome)**
-  - Mic permission flow
-  - Caption display + scrolling
-  - PWA install prompt + standalone mode
+  - Mic permission flow, caption display, PWA install + standalone
   - Wake lock prevents screen dimming
-  - Gap filler corrections appear with highlighting
   - Connection drop → banner → reconnect → STT resumes
 - [ ] **Run full test suite** — fix any failures
 - [ ] **Final production deploy**
-- [ ] **Update README.md** with:
-  - Live production URL
-  - Setup instructions for local dev
-  - How to set GEMINI_API_KEY
-  - Browser compatibility notes
+- [ ] **Update README.md** — live URL, setup instructions, GEMINI_API_KEY setup, browser compatibility
 
 ---
 
-## Feature Completion Tracker (P0 from PRD)
+### ✅ MVP DONE — Ship point. Everything below is Week 2.
 
+---
+
+---
+
+# WEEK 2 — V2 Features (Days 6–10)
+### Multi-speaker captions, Deepgram integration, shared session viewer.
+
+> **Pre-Week 2 sync (30 min):** Agree on WebSocket message schema for session server before Day 8. Michael needs it for Day 9 viewer app.
+
+---
+
+### Day 6 (Mon, Mar 17) — FIFO Display + Deepgram Setup
+
+**Michael — FIFO Data Model + DOM Renderer**
+- [ ] **Define FIFO data model** in `src/types/index.ts`
+  - `lines[]` array: `{ id, speakerId, words[], interim, done }`
+  - `pushLine()` with MAX_LINES trim logic
+  - `getLineOpacity()` decay function
+  - Unit tests: empty queue, exactly MAX_LINES, overflow by 1, overflow by 3
+- [ ] **Build `renderStage()`** with diff logic (add/remove by `data-lid`)
+  - Bottom-anchored flex layout
+  - `slideUp` entry animation
+  - Test on iPhone SE (375px), iPhone 14 Pro (393px), iPad (768px), iPad Pro (1024px)
+
+**Luba — Deepgram API Key Settings + WebSocket Connection**
+- [ ] **Build API key settings panel** in a new settings component
+  - Deepgram API key entry, masked after input (`••••••••xxxx`)
+  - Persist key in `localStorage`, clear/reset button
+  - Display estimated cost: `$0.0043/min`
+- [ ] **Build `connectDeepgram(apiKey)`** in `src/hooks/useDeepgram.ts`
+  - WebSocket connection with correct URL params
+  - `onopen`, `onmessage`, `onerror`, `onclose` handlers
+  - Show connection status in mic status bar
+
+---
+
+### Day 7 (Tue, Mar 18) — Word Tokens + Audio Pipeline
+
+**Michael — Word Token Component + Speaker Profiles**
+- [ ] **Build word token component**
+  - Colored block token: speaker background + text color
+  - Ghost/interim token: dashed border, reduced opacity
+  - Blinking cursor token for active line end
+  - Test word wrapping at narrow screen widths
+- [ ] **Build speaker profiles**
+  - Define 4 speaker objects: name, role, bg color, text color
+  - Speaker selector buttons with active state styling
+  - Wire speaker selection to `activeSpeakerId` state
+
+**Luba — Audio Streaming Pipeline**
+- [ ] **Implement PCM audio streaming** in `useDeepgram.ts`
+  - `AudioContext` + `AudioWorkletNode` (or `ScriptProcessorNode`)
+  - Float32 → Int16 PCM conversion
+  - Send raw PCM chunks over WebSocket
+- [ ] **Line break logic** — auto-break lines exceeding 8 words
+  - Preserve readability at `clamp(20px, 4.5vw, 42px)` font size
+  - Test with fast talkers and long sentences
+
+---
+
+### Day 8 (Wed, Mar 19) — Diarization + Session Server
+
+> **Sync at end of day:** Confirm WebSocket message schema so Michael can build viewer on Day 9.
+
+**Michael — Speaker Switching + Line Break UX**
+- [ ] **Wire speaker switching** during live session
+  - Tap speaker button → `currentLineId = null` → new caption line
+  - New line immediately adopts new speaker color
+  - Test rapid switching between speakers mid-sentence
+- [ ] **Mic status indicators** — READY / LISTENING / WAITING / ERROR states
+  - Show interim text in status bar as ghost preview
+  - Show LIVE badge with pulsing dot while session is active
+- [ ] **M2 QA pass** — test FIFO + speaker profiles end-to-end on device
+
+**Luba — Diarization Mapping + Session Server**
+- [ ] **Parse Deepgram diarization** in `useDeepgram.ts`
+  - Parse `words[]` array with `speaker` field
+  - Group consecutive same-speaker words into caption line segments
+  - Map `speaker 0–3` → `speakerId 1–4`
+  - Handle mid-sentence speaker change (flush buffer, start new line)
+- [ ] **Deepgram reconnection** — exponential backoff: 1s → 2s → 4s
+  - Show "RECONNECTING" status, reset retry delay on success
+  - If no API key in localStorage → fallback to Web Speech V1 silently
+  - Show "DEMO MODE" badge when using V1 fallback
+- [ ] **Build WebSocket session server** in `server/`
+  - Node.js + `ws` library
+  - Session Map: `sessionId → Set<WebSocket>`
+  - `CAPTION` broadcast to all session subscribers
+  - `SESSION_END` cleanup after 30min inactivity
+  - `USER_COUNT` broadcast on connect/disconnect
+
+---
+
+### Day 9 (Thu, Mar 20) — Shared Session + Viewer App
+
+> Michael mocks session server locally if Luba's server isn't merged yet. Integrate Day 10.
+
+**Michael — Viewer App + Share Session UI**
+- [ ] **Build `/s/[sessionId]` viewer route** — user-facing, read-only
+  - Connect to session WebSocket on page load
+  - Render FIFO caption display (no mic controls)
+  - Font size toggle: SM / MD / LG / XL
+  - Pinch-to-zoom on caption text
+- [ ] **Viewer reconnection**
+  - Detect WebSocket `onclose` while session active
+  - Show "Reconnecting…" overlay with spinner
+  - Exponential backoff retry
+  - Show "Session Ended" screen on `SESSION_END` event
+- [ ] **WakeLock for viewer** — request on session join, re-request on `visibilitychange`, release on end
+
+**Luba — Session Creation + Deploy Session Server**
+- [ ] **"Share Session" button** on operator dashboard
+  - Generate `crypto.randomUUID()` session ID on click
+  - Display session URL: `https://procaptions.app/s/[id]`
+  - Generate + display QR code using qrcode.js
+  - Show live user count badge
+- [ ] **Deploy session server** to Railway / Fly.io / Render
+  - Set up environment variables, HTTPS, smoke test
+- [ ] **Performance baseline** — measure caption render time (target < 100ms)
+
+---
+
+### Day 10 (Fri, Mar 21) — Integration + QA + Final Deploy
+
+> **Work together today.** This is the integration day.
+
+**Michael + Luba — Integration Testing**
+- [ ] **Full operator → user flow**
+  - Operator starts session → generates QR → user scans → captions appear
+  - Verify latency: speech to user screen < 500ms on same WiFi
+  - Test with 3 simultaneous user devices
+- [ ] **Deepgram end-to-end**
+  - Full: mic → PCM stream → Deepgram → diarization → FIFO display
+  - Test 2 speakers alternating at 6 ft, 3 speakers with interruptions
+  - Measure diarization accuracy (target ≥ 90%)
+
+**Michael — PWA + Cross-Device Matrix**
+- [ ] **PWA install test**
+  - iOS: Safari → Share → Add to Home Screen → verify standalone launch, icon, splash
+  - Verify WakeLock holds for 30min session
+- [ ] **Cross-device matrix**
+  - iPhone 13, iPhone SE, iPhone 15 Pro
+  - iPad Air, iPad Pro
+  - MacBook Chrome (desktop operator view)
+- [ ] **Accessibility pass on new screens** — settings panel, viewer app, share button
+
+**Luba — Performance + Bundle + Final Deploy**
+- [ ] **JS bundle audit** — keep viewer app under 50KB gzipped
+- [ ] **PWA load time on LTE** — target < 3s
+- [ ] **Run full test suite** — fix any failures
+- [ ] **Final production deploy** — both session server + Vercel PWA
+- [ ] **Smoke test production URLs** — operator flow, viewer, QR scan
+
+---
+
+## Feature Completion Tracker
+
+### Week 1 — MVP
 | P0 Requirement | Status | Owner | Day |
 |----------------|--------|-------|-----|
 | One-tap session start | Done | — | — |
 | Real-time captions via Web Speech API | Done | — | — |
 | Gap Filler via Gemini API | Done | — | — |
-| Confidence Highlighting (color-coded) | Done | — | — |
-| Visual distinction: confirmed vs predicted | Done | — | — |
+| Confidence highlighting (color-coded) | Done | — | — |
 | "Listening" status indicator | Done | — | — |
 | One-tap session end | Done | — | — |
 | Tap-to-flag misheard word | Done | — | — |
 | Installable PWA (manifest + SW) | Done | — | — |
-| **Mic permission pre-prompt UI** | **TODO** | Michael | 1 |
-| **Feedback buttons (YES/NO) functional** | **TODO** | Michael | 1 |
-| **STT auto-restart on reconnect** | **TODO** | Luba | 1 |
-| **Gap Filler offline queue** | **TODO** | Luba | 1 |
-| **Connection lost → auto-resume** | **TODO** | Luba | 1 |
-| **RNNoise WASM noise suppression** | **TODO** | Luba | 2 |
-| **Service worker caches app shell** | **TODO** | Luba | 2 |
-| **iOS splash screens** | **TODO** | Michael | 2 |
-| **Accessibility: WCAG AA compliant** | **TODO** | Michael | 3 |
-| **Touch targets >= 44px on all elements** | **TODO** | Michael | 3 |
-| **domain param used in Gemini prompt** | **TODO** | Luba | 1 |
-| **Vercel production deploy** | **TODO** | Luba | 4 |
-| **Real device testing: iOS + real speech** | **TODO** | Michael | 5 |
-| **Real device testing: Android Chrome** | **TODO** | Luba | 5 |
+| **Mic permission pre-prompt UI** | TODO | Michael | 1 |
+| **Feedback buttons (YES/NO) functional** | TODO | Michael | 1 |
+| **STT auto-restart on reconnect** | TODO | Luba | 1 |
+| **Gap Filler offline queue** | TODO | Luba | 1 |
+| **domain param used in Gemini prompt** | TODO | Luba | 1 |
+| **iOS splash screens** | TODO | Michael | 2 |
+| **RNNoise WASM noise suppression** | TODO | Luba | 2 |
+| **Service worker caches app shell** | TODO | Luba | 2 |
+| **Accessibility: WCAG AA compliant** | TODO | Michael | 3 |
+| **Touch targets >= 44px** | TODO | Michael | 3 |
+| **Vercel production deploy** | TODO | Luba | 4 |
+| **Real device testing: iOS** | TODO | Michael | 5 |
+| **Real device testing: Android** | TODO | Luba | 5 |
+
+### Week 2 — V2 Features
+| Feature | Status | Owner | Day |
+|---------|--------|-------|-----|
+| **FIFO data model + DOM renderer** | TODO | Michael | 6 |
+| **Word token component** | TODO | Michael | 7 |
+| **Speaker profiles + selector UI** | TODO | Michael | 7 |
+| **Speaker switching mid-session** | TODO | Michael | 8 |
+| **Mic status indicators (LIVE badge)** | TODO | Michael | 8 |
+| **Viewer app `/s/[sessionId]`** | TODO | Michael | 9 |
+| **Share Session + QR code** | TODO | Luba | 9 |
+| **Deepgram API key settings panel** | TODO | Luba | 6 |
+| **Deepgram WebSocket connection** | TODO | Luba | 6 |
+| **PCM audio streaming pipeline** | TODO | Luba | 7 |
+| **Diarization mapping** | TODO | Luba | 8 |
+| **Deepgram reconnection + fallback** | TODO | Luba | 8 |
+| **WebSocket session server** | TODO | Luba | 8 |
+| **Session server deploy** | TODO | Luba | 9 |
+| **Full integration testing** | TODO | Both | 10 |
+| **Performance: < 100ms render, < 50KB bundle** | TODO | Luba | 10 |
+
+---
 
 ## Test Coverage Tracker
 
@@ -325,14 +494,42 @@ Code locations: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14
 | useGapFiller.test.ts | TODO | Luba | 3 |
 | useWakeLock.test.ts | TODO | Luba | 3 |
 | useSessionTimer.test.ts | TODO | Luba | 3 |
-| **Total** | **37 done + ~50 new** | | |
+| **Total W1** | **37 done + ~50 new** | | |
+| useDeepgram.test.ts | TODO | Luba | 7 |
+| fifoModel.test.ts | TODO | Michael | 6 |
+| viewer.spec.ts (E2E) | TODO | Michael | 9 |
+
+---
+
+## Risk Register
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| iOS Safari kills recognition after 60s | High | High | Auto-restart on `onend` — already implemented |
+| Deepgram diarization misidentifies speaker | Medium | Medium | Allow manual override tap during session |
+| WebSocket drops on WiFi → LTE switch | Medium | High | Exponential backoff reconnect |
+| RNNoise WASM integration breaks AudioWorklet | Medium | High | Keep pass-through as fallback |
+| Week 2 scope bleeds into Week 1 | Medium | High | Hard stop: Day 5 = ship point regardless |
+| Deepgram API cost surprise for long sessions | Low | Medium | Show cost estimate in UI; add optional session time limit |
+
+---
+
+## Open Questions
+
+| # | Question | Owner | Due |
+|---|----------|-------|-----|
+| 1 | Should Deepgram API key be stored client-side or proxied through backend? | Michael | Day 6 |
+| 2 | What is the max number of simultaneous viewers per session? | Michael | Day 8 |
+| 3 | Should viewer session require a PIN for private events? | Michael | Day 8 |
+| 4 | Session server: self-hosted (Railway/Fly.io) or managed? | Luba | Day 8 |
 
 ---
 
 ## Merge Conflict Prevention Rules
 
-1. **Stick to your files** — Michael owns `src/components/` + `e2e/`, Luba owns `src/hooks/` + `src/app/api/` + `src/context/` + `src/lib/`
-2. **Coordinate on shared files** — `src/types/index.ts`, `package.json` — message each other before editing
+1. **Stick to your files** — Michael owns `src/components/` + `e2e/`, Luba owns `src/hooks/` + `src/app/api/` + `src/context/` + `src/lib/` + `server/`
+2. **Coordinate on shared files** — `src/types/index.ts`, `package.json` — message before editing
 3. **Pull from main before starting each day** — `git pull origin main`
 4. **Small, focused PRs** — merge quickly to avoid long-lived branches
-5. **Branch naming**: `luba/day1-mic-prompt`, `michael/day1-reconnect-stt`
+5. **Branch naming**: `luba/day1-reconnect-stt`, `michael/day1-mic-prompt`
+6. **Week 1 = MVP** — do not start Week 2 tasks until Day 5 is merged and deployed
