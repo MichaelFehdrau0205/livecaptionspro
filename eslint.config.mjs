@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Third-party generated files — not our code
+    "public/rnnoise-sync.js",
+    "public/audio-processor.js",
   ]),
 ]);
 
