@@ -15,7 +15,10 @@ export function CaptionArea({ captions, currentInterim, onFlagWord }: CaptionAre
 
   // Auto-scroll to latest caption
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = bottomRef.current;
+    if (el?.scrollIntoView && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [captions, currentInterim]);
 
   return (
@@ -32,15 +35,15 @@ export function CaptionArea({ captions, currentInterim, onFlagWord }: CaptionAre
           </span>
         ))}
 
-        {/* Interim text — shown in lighter color */}
+        {/* Interim text — readable gray, italic to distinguish from final */}
         {currentInterim && (
-          <span className="text-white/50 italic">{currentInterim}</span>
+          <span className="text-white/70 italic" data-testid="interim-text">{currentInterim}</span>
         )}
 
-        {/* Blinking cursor */}
-        <span className="inline-block w-0.5 h-5 bg-white/70 animate-pulse ml-1" aria-hidden="true" />
+        {/* Subtle blinking cursor at end of live text */}
+        <span className="inline-block w-0.5 h-5 bg-white/60 animate-pulse ml-1 align-middle" aria-hidden="true" data-testid="caption-cursor" />
 
-        <div ref={bottomRef} />
+        <div ref={bottomRef} data-testid="caption-area-bottom" aria-hidden="true" />
       </div>
     </div>
   );

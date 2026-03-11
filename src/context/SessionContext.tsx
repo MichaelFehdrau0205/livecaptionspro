@@ -23,9 +23,11 @@ interface SessionContextValue {
   dispatch: React.Dispatch<SessionAction>;
   startSession: () => Promise<void>;
   endSession: () => void;
+  giveFeedback: (choice: 'yes' | 'no') => void;
   connectionStatus: ReturnType<typeof useConnectionStatus>;
   gapFillerPaused: boolean;
   timer: string;
+  audioError: string | null;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -39,8 +41,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const submittedLineIds = useRef<Set<string>>(new Set());
 
   const onGapFillerResult = useCallback((lineId: string, response: GapFillerResponse) => {
-    console.log('[gap-filler] lineId:', lineId, 'correctedSentence:', response.correctedSentence);
-    console.log('[gap-filler] words:', JSON.stringify(response.words));
     const words = response.words.map((w) => ({ ...w, flagged: false }));
     dispatch({
       type: 'APPLY_GAP_FILLER',
@@ -62,7 +62,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
   }, [state.captions, state.status, fillGap]);
 
-  const { start: startAudio, stop: stopAudio } = useAudioPipeline();
+  const { start: startAudio, stop: stopAudio, error: audioError } = useAudioPipeline();
 
   const { start: startSTT, stop: stopSTT } = useSpeechRecognition({
     onInterim: (text) => dispatch({ type: 'ADD_INTERIM', payload: text }),
@@ -92,8 +92,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const startSession = useCallback(async () => {
     submittedLineIds.current = new Set();
+    const stream = await startAudio();
+    if (!stream) return; // permission denied or error — stay idle, audioError is set
     dispatch({ type: 'START_SESSION' });
-    await startAudio();
     startSTT();
   }, [startAudio, startSTT]);
 
@@ -103,14 +104,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'END_SESSION' });
   }, [stopSTT, stopAudio]);
 
+  const giveFeedback = useCallback((choice: 'yes' | 'no') => {
+    dispatch({ type: 'GIVE_FEEDBACK', payload: choice });
+  }, []);
+
   const value: SessionContextValue = {
     state,
     dispatch,
     startSession,
     endSession,
+    giveFeedback,
     connectionStatus,
     gapFillerPaused,
     timer,
+    audioError,
   };
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

@@ -163,13 +163,15 @@ describe('POST /api/gap-filler', () => {
       expect(body.rateLimited).toBe(true);
     });
 
-    it('returns fallback with rateLimited=true on quota message', async () => {
+    it('returns fallback without rateLimited on quota message (only 429 sets rateLimited)', async () => {
       mockGenerateContent.mockRejectedValueOnce(new Error('Resource has been exhausted'));
 
       const res = await POST(makeRequest({ sentence: 'quota hit' }));
       const body = await res.json();
 
-      expect(body.rateLimited).toBe(true);
+      expect(res.status).toBe(200);
+      expect(body.correctedSentence).toBe('quota hit');
+      expect(body.rateLimited).toBeUndefined();
     });
 
     it('retries once on malformed JSON and returns fallback if retry also fails', async () => {

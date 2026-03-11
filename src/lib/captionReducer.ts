@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import type { SessionState, CaptionLine, CaptionWord, SessionStatus } from '@/types';
+import type { SessionState, CaptionLine, CaptionWord, SessionStatus, FeedbackGiven } from '@/types';
 
 export type SessionAction =
   | { type: 'START_SESSION' }
@@ -8,7 +8,8 @@ export type SessionAction =
   | { type: 'APPLY_GAP_FILLER'; payload: { lineId: string; words: CaptionWord[] } }
   | { type: 'FLAG_WORD'; payload: { lineId: string; wordIndex: number } }
   | { type: 'END_SESSION' }
-  | { type: 'SET_STATUS'; payload: SessionStatus };
+  | { type: 'SET_STATUS'; payload: SessionStatus }
+  | { type: 'GIVE_FEEDBACK'; payload: FeedbackGiven };
 
 export const initialState: SessionState = {
   status: 'idle',
@@ -16,6 +17,7 @@ export const initialState: SessionState = {
   currentInterim: '',
   sessionStartTime: null,
   stats: { wordCount: 0, aiCorrections: 0 },
+  feedbackGiven: null,
 };
 
 function sentenceToWords(sentence: string): CaptionWord[] {
@@ -33,6 +35,7 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
         ...initialState,
         status: 'listening',
         sessionStartTime: Date.now(),
+        feedbackGiven: null,
       };
 
     case 'ADD_INTERIM':
@@ -94,6 +97,9 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
 
     case 'END_SESSION':
       return { ...state, status: 'ended', currentInterim: '' };
+
+    case 'GIVE_FEEDBACK':
+      return { ...state, feedbackGiven: action.payload };
 
     case 'SET_STATUS':
       return { ...state, status: action.payload };
