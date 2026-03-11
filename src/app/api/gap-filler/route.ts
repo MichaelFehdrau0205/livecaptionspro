@@ -27,9 +27,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'sentence is required' }, { status: 400 });
   }
 
-  // Graceful no-key fallback
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  // Graceful no-key fallback (missing or placeholder = no Gemini, no "rate limited" message)
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey || apiKey === 'your_key_here') {
     return NextResponse.json(fallbackResponse(sentence));
   }
 
@@ -47,10 +47,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const result = await Promise.race([model.generateContent(prompt), timeoutPromise]);
     rawText = result.response.text();
   } catch (err: unknown) {
-    const error = err as Error & { status?: number };
-    const isRateLimit = error?.status === 429
-      || error?.message?.includes('quota')
-      || error?.message?.includes('Resource has been exhausted');
+    const error = err as Error & { status?: number; statusCode?: number };
+    const msg = (error?.message ?? '').toLowerCase();
+    // Only treat as rate limit when we're sure it's 429 (avoid false "AI enhancement paused" from other errors)
+    const isRateLimit =
+      error?.status === 429 ||
+      error?.statusCode === 429 ||
+      msg.includes('429');
 
     if (isRateLimit) {
       console.warn('[gap-filler] Rate limited by Gemini — pausing gap filler for 60s');

@@ -1,29 +1,41 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { StartScreen } from './StartScreen';
 
-// Mock the session context
+const startSessionMock = vi.hoisted(() => vi.fn());
 vi.mock('@/context/SessionContext', () => ({
   useSession: () => ({
-    state: { status: 'idle', captions: [], currentInterim: '', sessionStartTime: null, stats: { wordCount: 0, aiCorrections: 0 } },
-    startSession: vi.fn(),
+    state: {
+      status: 'idle',
+      captions: [],
+      currentInterim: '',
+      sessionStartTime: null,
+      stats: { wordCount: 0, aiCorrections: 0 },
+      feedbackGiven: null,
+    },
+    startSession: startSessionMock,
     endSession: vi.fn(),
     dispatch: vi.fn(),
     connectionStatus: 'connected',
     gapFillerPaused: false,
     timer: '00:00:00',
+    audioError: null,
   }),
 }));
 
 describe('StartScreen', () => {
+  beforeEach(() => {
+    startSessionMock.mockClear();
+  });
+
   it('renders the app title', () => {
     render(<StartScreen />);
     expect(screen.getByText('Live Captions Pro')).toBeInTheDocument();
   });
 
-  it('renders the start button', () => {
+  it('renders the start button', async () => {
     render(<StartScreen />);
-    expect(screen.getByTestId('start-button')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('start-button')).toBeInTheDocument());
     expect(screen.getByText('START CAPTIONING')).toBeInTheDocument();
   });
 
@@ -32,21 +44,35 @@ describe('StartScreen', () => {
     expect(screen.getByText(/education mode/i)).toBeInTheDocument();
   });
 
-  it('calls startSession when button is clicked', () => {
-    const startSession = vi.fn();
-    vi.mocked(vi.importActual('@/context/SessionContext')).then(() => {});
-    // Re-mock with our spy
-    const { useSession } = vi.hoisted(() => ({ useSession: vi.fn() }));
-    useSession.mockReturnValue({ startSession, state: { status: 'idle' } });
-    // Simple click test
+  it('shows mic permission prompt when start is clicked', async () => {
     render(<StartScreen />);
-    fireEvent.click(screen.getByTestId('start-button'));
-    // startSession would be called — verified via mock
+    const startBtn = await screen.findByTestId('start-button');
+    fireEvent.click(startBtn);
+    expect(screen.getByTestId('mic-permission-prompt')).toBeInTheDocument();
+    expect(screen.getByText(/Your audio is processed locally/)).toBeInTheDocument();
+    expect(screen.getByTestId('allow-mic-button')).toBeInTheDocument();
   });
 
-  it('start button has adequate touch target size', () => {
+  it('calls startSession when Allow Microphone is clicked', async () => {
     render(<StartScreen />);
-    const btn = screen.getByTestId('start-button');
+    const startBtn = await screen.findByTestId('start-button');
+    fireEvent.click(startBtn);
+    fireEvent.click(screen.getByTestId('allow-mic-button'));
+    expect(startSessionMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes modal when Cancel is clicked', async () => {
+    render(<StartScreen />);
+    const startBtn = await screen.findByTestId('start-button');
+    fireEvent.click(startBtn);
+    expect(screen.getByTestId('mic-permission-prompt')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('cancel-mic-prompt'));
+    expect(screen.queryByTestId('mic-permission-prompt')).not.toBeInTheDocument();
+  });
+
+  it('start button has adequate touch target size', async () => {
+    render(<StartScreen />);
+    const btn = await screen.findByTestId('start-button');
     expect(btn).toHaveClass('min-h-[56px]');
   });
 });

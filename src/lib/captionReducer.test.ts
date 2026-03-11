@@ -97,4 +97,20 @@ describe('captionReducer', () => {
     const state = dispatch(initialState, { type: 'ADD_INTERIM', payload: '' });
     expect(state.currentInterim).toBe('');
   });
+
+  it('sets feedbackGiven on GIVE_FEEDBACK', () => {
+    const ended = dispatch(initialState, { type: 'END_SESSION' });
+    const afterYes = dispatch(ended, { type: 'GIVE_FEEDBACK', payload: 'yes' });
+    expect(afterYes.feedbackGiven).toBe('yes');
+    const afterNo = dispatch(ended, { type: 'GIVE_FEEDBACK', payload: 'no' });
+    expect(afterNo.feedbackGiven).toBe('no');
+  });
+
+  it('resets feedbackGiven on START_SESSION', () => {
+    const ended = dispatch(initialState, { type: 'END_SESSION' });
+    const withFeedback = dispatch(ended, { type: 'GIVE_FEEDBACK', payload: 'yes' });
+    expect(withFeedback.feedbackGiven).toBe('yes');
+    const restarted = dispatch(withFeedback, { type: 'START_SESSION' });
+    expect(restarted.feedbackGiven).toBe(null);
+  });
 });

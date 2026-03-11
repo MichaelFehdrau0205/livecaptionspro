@@ -12,8 +12,8 @@ function formatDuration(startTime: number | null): string {
 }
 
 export function SessionEndScreen() {
-  const { state, startSession } = useSession();
-  const { stats, sessionStartTime } = state;
+  const { state, startSession, giveFeedback } = useSession();
+  const { stats, sessionStartTime, feedbackGiven } = state;
   const duration = formatDuration(sessionStartTime);
 
   return (
@@ -31,27 +31,41 @@ export function SessionEndScreen() {
 
         <div className="w-full border-t border-white/10" />
 
-        {/* Feedback prompt */}
+        {/* Feedback prompt — show thanks/great after answering */}
         <div>
-          <p className="text-lg font-medium mb-4">Did you miss anything important?</p>
-          <div className="flex gap-4 justify-center">
-            <button
-              className="px-8 py-3 rounded-2xl border-2 border-white/30 text-white font-bold
-                hover:border-white/60 active:scale-95 transition-all min-h-[56px] min-w-[80px]"
-              aria-label="Yes, I missed something"
-              data-testid="feedback-yes"
-            >
-              YES
-            </button>
-            <button
-              className="px-8 py-3 rounded-2xl border-2 border-white/30 text-white font-bold
-                hover:border-white/60 active:scale-95 transition-all min-h-[56px] min-w-[80px]"
-              aria-label="No, I got everything"
-              data-testid="feedback-no"
-            >
-              NO
-            </button>
-          </div>
+          {feedbackGiven === null ? (
+            <>
+              <p className="text-lg font-medium mb-4">Did you miss anything important?</p>
+              <div className="flex gap-4 justify-center">
+                <button
+                  onClick={() => giveFeedback('yes')}
+                  className="px-8 py-3 rounded-2xl border-2 border-white/30 text-white font-bold
+                    hover:border-white/60 active:scale-95 transition-all min-h-[56px] min-w-[80px]"
+                  aria-label="Yes, I missed something"
+                  data-testid="feedback-yes"
+                >
+                  YES
+                </button>
+                <button
+                  onClick={() => giveFeedback('no')}
+                  className="px-8 py-3 rounded-2xl border-2 border-white/30 text-white font-bold
+                    hover:border-white/60 active:scale-95 transition-all min-h-[56px] min-w-[80px]"
+                  aria-label="No, I got everything"
+                  data-testid="feedback-no"
+                >
+                  NO
+                </button>
+              </div>
+            </>
+          ) : feedbackGiven === 'yes' ? (
+            <p className="text-lg font-medium text-green-400" data-testid="feedback-thanks">
+              Thanks for your feedback!
+            </p>
+          ) : (
+            <p className="text-lg font-medium text-green-400" data-testid="feedback-great">
+              Great!
+            </p>
+          )}
         </div>
 
         <div className="w-full border-t border-white/10" />
@@ -62,6 +76,7 @@ export function SessionEndScreen() {
           data-testid="new-session-button"
           className="w-full py-5 rounded-2xl bg-white text-[#1a1a2e] text-xl font-bold tracking-wide
             hover:bg-white/90 active:scale-95 transition-all min-h-[56px]"
+          aria-label="Start a new captioning session"
         >
           NEW SESSION
         </button>

@@ -21,12 +21,15 @@ export interface SessionStats {
   aiCorrections: number;
 }
 
+export type FeedbackGiven = 'yes' | 'no' | null;
+
 export interface SessionState {
   status: SessionStatus;
   captions: CaptionLine[];
   currentInterim: string;
   sessionStartTime: number | null;
   stats: SessionStats;
+  feedbackGiven: FeedbackGiven;
 }
 
 // Gap Filler API types
