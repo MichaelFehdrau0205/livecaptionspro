@@ -44,7 +44,7 @@ export function useAudioPipeline() {
 
       // Attempt to load RNNoise AudioWorklet (gracefully skipped if unavailable)
       try {
-        await ctx.audioWorklet.addModule('/audio-processor.js', { type: 'module' });
+        await ctx.audioWorklet.addModule('/audio-processor.js', { type: 'module' } as WorkletOptions);
         const workletNode = new AudioWorkletNode(ctx, 'rnnoise-processor');
         source.connect(workletNode);
         // workletNode output is consumed by the worklet itself; Web Speech API
