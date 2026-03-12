@@ -123,13 +123,15 @@ export function useSpeechRecognition(callbacks: SpeechRecognitionCallbacks) {
 
     recognition.onend = () => {
       // Auto-restart if still active (iOS Safari stops after silence)
-      if (activeRef.current) {
+      // Guard: only restart if this is still the current recognition instance,
+      // otherwise a new session has already started a fresh instance.
+      if (activeRef.current && recognitionRef.current === recognition) {
         try {
           recognition.start();
         } catch {
           // ignore if already starting
         }
-      } else {
+      } else if (!activeRef.current) {
         setStatus('idle');
       }
     };
