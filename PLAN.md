@@ -217,20 +217,20 @@ Code: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14-20` (rend
 > **Sync at start of day:** Luba merges Days 1–3 PRs so Michael's E2E tests run against real features.
 
 **Michael — E2E Test Suite**
-- [ ] **Expand `e2e/session.spec.ts`**
+- [x] **Expand `e2e/session.spec.ts`**
   - Full happy path: start → mic permission prompt → captions stream → gap filler highlights → end → stats
   - Test connection lost banner (mock offline event)
   - Test session timer increments
   - Test tap-to-flag word turns red
-- [ ] **Expand `e2e/mobile.spec.ts`**
+- [x] **Expand `e2e/mobile.spec.ts`**
   - iPhone viewport (375×812): all touch targets >= 44px
   - Caption area scrolls to bottom on new text
   - ControlBar is in thumb-reachable zone
   - Verify safe area padding renders
-- [ ] **Add `e2e/pwa.spec.ts`**
+- [x] **Add `e2e/pwa.spec.ts`**
   - PWA manifest detected, service worker registers and activates
   - App shell loads from cache on repeat visit
-- [ ] **Test mic pre-prompt dialog** in E2E — dialog shows, buttons work
+- [x] **Test mic pre-prompt dialog** in E2E — dialog shows, buttons work
 
 **Luba — Vercel Deployment + Production Setup**
 - [ ] **Deploy to Vercel**
@@ -288,7 +288,7 @@ Code: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14-20` (rend
 
 ---
 
-### Day 6 (Mon, Mar 17) — FIFO Display + Deepgram Setup
+### Day 6 (Tues, Mar 17) — FIFO Display + Deepgram Setup
 
 **Michael — FIFO Data Model + DOM Renderer**
 - [ ] **Define FIFO data model** in `src/types/index.ts`

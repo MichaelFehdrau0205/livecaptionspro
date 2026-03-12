@@ -23,3 +23,24 @@ body {
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* Tap-friendly buttons: scoped by parent so button markup stays identical (avoids hydration mismatch) */
+[data-tap-targets] button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Start screen and modals: fit viewport with safe area insets */
+.start-screen-fit {
+  min-height: 100dvh;
+  min-height: 100vh;
+  padding-top: max(1.5rem, env(safe-area-inset-top));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+.mic-prompt-overlay-fit {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
