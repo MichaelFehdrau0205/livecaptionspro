@@ -16,3 +16,6 @@ export const GAP_FILLER_RATE_LIMIT_PAUSE_MS = 60000;
 
 // Gap Filler context window (number of previous sentences sent to Gemini)
 export const GAP_FILLER_CONTEXT_SIZE = 5;
+
+// FIFO caption stage (Week 2 multi-speaker)
+export const MAX_LINES = 8;

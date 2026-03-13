@@ -52,3 +52,16 @@ export interface GapFillerResponse {
   words: GapFillerWordResult[];
   rateLimited?: boolean;
 }
+
+// FIFO stage (Week 2 multi-speaker display)
+export interface FifoWord {
+  text: string;
+}
+
+export interface FifoLine {
+  id: string;
+  speakerId: number;
+  words: FifoWord[];
+  interim: string;
+  done: boolean;
+}
