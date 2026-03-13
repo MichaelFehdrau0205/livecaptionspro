@@ -71,3 +71,18 @@ body {
   padding-left: max(1rem, env(safe-area-inset-left));
   padding-right: max(1rem, env(safe-area-inset-right));
 }
+
+/* FIFO stage: slide-up entry (Day 6) */
+@keyframes fifo-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fifo-slide-up {
+  animation: fifo-slide-up 0.25s ease-out;
+}
