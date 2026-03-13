@@ -47,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="/splash/ipad.png"
           media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)"
         />
-      <script src="/register-sw.js" defer />
+      {process.env.NODE_ENV === 'production' && <script src="/register-sw.js" defer />}
       </head>
       <body className="bg-[#1a1a2e] text-white antialiased">
         <a href="#main-content" className="skip-link">Skip to main content</a>
