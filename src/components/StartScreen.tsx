@@ -3,6 +3,30 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useSession } from '@/context/SessionContext';
 
+function IOSTip() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (typeof navigator === 'undefined') return;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    let isStandalone = false;
+    try {
+      if (typeof window.matchMedia === 'function') {
+        isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      }
+      if (!isStandalone && (navigator as { standalone?: boolean }).standalone === true) isStandalone = true;
+    } catch {
+      // ignore
+    }
+    setShow(isIOS || isStandalone);
+  }, []);
+  if (!show) return null;
+  return (
+    <p className="text-xs text-white/50 text-center max-w-[280px]">
+      On iPhone: open this page in <strong>Safari (browser tab)</strong>, not from Home Screen, for speech recognition.
+    </p>
+  );
+}
+
 export function StartScreen() {
   const { startSession, audioError } = useSession();
   const [showPrePrompt, setShowPrePrompt] = useState(false);
@@ -89,6 +113,8 @@ export function StartScreen() {
         </button>
 
         <span className="text-sm text-white/50 tracking-widest uppercase">Education Mode</span>
+
+        <IOSTip />
       </div>
 
       {showPrePrompt && (
@@ -110,9 +136,11 @@ export function StartScreen() {
               <p className="text-amber-400 text-sm mb-4" role="alert">
                 {audioError.includes('denied') || audioError.includes('Permission')
                   ? 'Permission denied. Please allow microphone access and try again.'
-                  : audioError.includes('not supported') || audioError.includes('getUserMedia')
-                    ? 'Microphone not supported. Use a modern browser (Chrome, Safari, Edge).'
-                    : audioError}
+                  : audioError.includes('HTTPS') || audioError.includes('production URL')
+                    ? 'Voice capture needs a secure connection. On iPhone, open the app using the production link (https://…) in Safari, not a local address.'
+                    : audioError.includes('not supported') || audioError.includes('getUserMedia')
+                      ? 'Microphone not supported. Use a modern browser (Chrome, Safari, Edge).'
+                      : audioError}
               </p>
             )}
             <div className="flex flex-col gap-3">

@@ -83,7 +83,7 @@ To confirm Gemini is being called (not just fallback):
 
 **If you see only `confirmed` words with confidence `1.0` on every word:** the API key is missing or the request is failing — check Vercel env vars or `.env.local`.
 
-**Rate limit:** If Gemini hits its limit (250 req/day free tier), the status bar shows "AI enhancement paused" and all words show as white/confirmed. This is expected fallback behavior.
+**Rate limit:** If Gemini hits its limit (250 req/day free tier), the gap filler pauses and all words show as white/confirmed. The "AI enhancement paused" label is hidden in the UI (StatusBar does not display it).
 
 ---
 

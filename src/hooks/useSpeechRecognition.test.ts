@@ -102,7 +102,7 @@ describe('useSpeechRecognition', () => {
     );
     act(() => { result.current.start(); });
     act(() => { fireFinal('hello world'); });
-    expect(onFinal).toHaveBeenCalledWith('hello world');
+    expect(onFinal).toHaveBeenCalledWith('hello world.');
   });
 
   it('calls onInterim when an interim result is received', () => {

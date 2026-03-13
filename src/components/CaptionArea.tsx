@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { CaptionLine } from './CaptionLine';
 import type { CaptionLine as CaptionLineType } from '@/types';
+import { addEndPunctuation } from '@/lib/punctuation';
 
 interface CaptionAreaProps {
   captions: CaptionLineType[];
@@ -35,9 +36,9 @@ export function CaptionArea({ captions, currentInterim, onFlagWord }: CaptionAre
           </span>
         ))}
 
-        {/* Interim text — readable gray, italic to distinguish from final */}
+        {/* Interim text — add punctuation so iOS (which may rarely send final results) still shows ? ! . */}
         {currentInterim && (
-          <span className="text-white/70 italic" data-testid="interim-text">{currentInterim}</span>
+          <span className="text-white/70 italic" data-testid="interim-text">{addEndPunctuation(currentInterim)}</span>
         )}
 
         {/* Subtle blinking cursor at end of live text */}

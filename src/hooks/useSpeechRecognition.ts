@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SILENCE_RESTART_MS } from '@/lib/constants';
+import { addEndPunctuation } from '@/lib/punctuation';
 
 interface SpeechRecognitionCallbacks {
   onInterim: (text: string) => void;
@@ -99,18 +100,31 @@ export function useSpeechRecognition(callbacks: SpeechRecognitionCallbacks) {
 
     recognition.onresult = (event: ISpeechRecognitionEvent) => {
       resetSilenceTimer();
-      let interimTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          callbacksRef.current.onFinal(result[0].transcript);
-        } else {
-          interimTranscript += result[0].transcript;
+      const results = event.results;
+      // Safe transcript for any result (iOS can have different structure)
+      const getTranscript = (result: ISpeechResult, trim = true): string => {
+        const raw = result?.length && result[0] ? String(result[0].transcript ?? '') : '';
+        return trim ? raw.trim() : raw;
+      };
+
+      // Final results: only process new ones from resultIndex
+      for (let i = event.resultIndex; i < results.length; i++) {
+        const result = results[i];
+        if (result?.isFinal) {
+          const transcript = getTranscript(result);
+          if (transcript) callbacksRef.current.onFinal(addEndPunctuation(transcript));
         }
       }
-      if (interimTranscript) {
-        callbacksRef.current.onInterim(interimTranscript);
+
+      // Interim: build full phrase from ALL non-final results in this event (iOS sends
+      // per-fragment otherwise we only show the last chunk and punctuation has no phrase to work on)
+      let fullInterim = '';
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        if (result && !result.isFinal) fullInterim += getTranscript(result, false);
       }
+      const trimmed = fullInterim.trim();
+      if (trimmed) callbacksRef.current.onInterim(trimmed);
     };
 
     recognition.onerror = (event: ISpeechRecognitionErrorEvent) => {

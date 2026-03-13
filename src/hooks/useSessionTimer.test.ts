@@ -101,4 +101,13 @@ describe('useSessionTimer', () => {
     act(() => { vi.advanceTimersByTime(1000); }); // 0:00:01
     expect(result.current).toBe('00:00:01');
   });
+
+  it('stops at endTime when provided (frozen duration)', () => {
+    const start = Date.now();
+    const end = start + 125000; // 125 seconds
+    const { result } = renderHook(() => useSessionTimer(start, end));
+    expect(result.current).toBe('00:02:05');
+    act(() => { vi.advanceTimersByTime(10000); });
+    expect(result.current).toBe('00:02:05');
+  });
 });

@@ -12,6 +12,7 @@ const defaultState = {
   captions: [],
   currentInterim: '',
   sessionStartTime: Date.now() - 125000, // ~2 min ago
+  sessionEndTime: Date.now() - 125000 + 125000, // frozen at 125s = 00:02:05
   stats: { wordCount: 42, aiCorrections: 3 },
   feedbackGiven: null as 'yes' | 'no' | null,
 };
@@ -27,6 +28,7 @@ function renderWithMock(giveFeedback = vi.fn(), state = defaultState) {
     gapFillerPaused: false,
     timer: '00:02:05',
     audioError: null,
+    speechError: null,
   });
   return render(<SessionEndScreen />);
 }
@@ -43,6 +45,7 @@ describe('SessionEndScreen', () => {
       gapFillerPaused: false,
       timer: '00:02:05',
       audioError: null,
+      speechError: null,
     });
   });
 
@@ -51,9 +54,10 @@ describe('SessionEndScreen', () => {
     expect(screen.getByText('SESSION ENDED')).toBeInTheDocument();
   });
 
-  it('renders session stats', () => {
+  it('renders session stats with frozen duration', () => {
     render(<SessionEndScreen />);
     expect(screen.getByText(/Duration:/)).toBeInTheDocument();
+    expect(screen.getByText('00:02:05')).toBeInTheDocument();
     expect(screen.getByText(/Words captured:/)).toBeInTheDocument();
     expect(screen.getByText('42')).toBeInTheDocument();
     expect(screen.getByText(/AI corrections:/)).toBeInTheDocument();
@@ -103,6 +107,7 @@ describe('SessionEndScreen', () => {
       gapFillerPaused: false,
       timer: '00:00:00',
       audioError: null,
+      speechError: null,
     });
     render(<SessionEndScreen />);
     const btn = screen.getByTestId('new-session-button');

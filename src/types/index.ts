@@ -28,6 +28,8 @@ export interface SessionState {
   captions: CaptionLine[];
   currentInterim: string;
   sessionStartTime: number | null;
+  /** Set when session ends so duration stops (frozen at end time). */
+  sessionEndTime: number | null;
   stats: SessionStats;
   feedbackGiven: FeedbackGiven;
 }

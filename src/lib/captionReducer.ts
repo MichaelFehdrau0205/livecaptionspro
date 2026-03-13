@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { addEndPunctuation } from '@/lib/punctuation';
 import type { SessionState, CaptionLine, CaptionWord, SessionStatus, FeedbackGiven } from '@/types';
 
 export type SessionAction =
@@ -16,6 +17,7 @@ export const initialState: SessionState = {
   captions: [],
   currentInterim: '',
   sessionStartTime: null,
+  sessionEndTime: null,
   stats: { wordCount: 0, aiCorrections: 0 },
   feedbackGiven: null,
 };
@@ -35,15 +37,19 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
         ...initialState,
         status: 'listening',
         sessionStartTime: Date.now(),
+        sessionEndTime: null,
         feedbackGiven: null,
       };
 
-    case 'ADD_INTERIM':
-      return { ...state, currentInterim: action.payload };
+    case 'ADD_INTERIM': {
+      const raw = String(action.payload ?? '').trim();
+      return { ...state, currentInterim: raw ? addEndPunctuation(raw) : '' };
+    }
 
     case 'FINALIZE_LINE': {
-      const text = action.payload.trim();
-      if (!text) return { ...state, currentInterim: '' };
+      const raw = String(action.payload ?? '').trim();
+      if (!raw) return { ...state, currentInterim: '' };
+      const text = addEndPunctuation(raw);
       const words = sentenceToWords(text);
       const newLine: CaptionLine = {
         id: uuidv4(),
@@ -64,14 +70,22 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
 
     case 'APPLY_GAP_FILLER': {
       const { lineId, words: newWords } = action.payload;
+      // Re-apply end punctuation when Gemini returns words without it (? ! or .)
+      const sentence = newWords.map((w) => w.text).join(' ');
+      const withPunct = addEndPunctuation(sentence);
+      let wordsToApply = newWords;
+      if (withPunct.length > sentence.length) {
+        const added = withPunct.slice(-1);
+        const last = newWords[newWords.length - 1];
+        wordsToApply = [...newWords.slice(0, -1), { ...last, text: last.text + added }];
+      }
       let corrections = 0;
       const updatedCaptions = state.captions.map((line) => {
         if (line.id !== lineId) return line;
-        // Count words that changed or were predicted
-        corrections = newWords.filter(
+        corrections = wordsToApply.filter(
           (w, i) => w.type !== 'confirmed' || (line.words[i] && w.text !== line.words[i].text)
         ).length;
-        return { ...line, words: newWords, gapFillerApplied: true };
+        return { ...line, words: wordsToApply, gapFillerApplied: true };
       });
       return {
         ...state,
@@ -96,7 +110,7 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
     }
 
     case 'END_SESSION':
-      return { ...state, status: 'ended', currentInterim: '' };
+      return { ...state, status: 'ended', currentInterim: '', sessionEndTime: Date.now() };
 
     case 'GIVE_FEEDBACK':
       return { ...state, feedbackGiven: action.payload };

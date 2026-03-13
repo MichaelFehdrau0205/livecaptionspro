@@ -133,7 +133,7 @@ describe('SessionContext', () => {
     });
     expect(fillGap).toHaveBeenCalledWith(
       expect.any(String),
-      'Hello world'
+      'Hello world.'
     );
   });
 });

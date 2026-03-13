@@ -37,7 +37,7 @@ describe('CaptionArea', () => {
     expect(screen.getAllByTestId('caption-line')).toHaveLength(2);
   });
 
-  it('shows interim text when present', () => {
+  it('shows interim text with end punctuation applied (for iOS where finals may be rare)', () => {
     render(
       <CaptionArea
         captions={[]}
@@ -46,7 +46,14 @@ describe('CaptionArea', () => {
       />
     );
     const interim = screen.getByTestId('interim-text');
-    expect(interim).toHaveTextContent('listening now');
+    expect(interim).toHaveTextContent('listening now.');
+  });
+
+  it('applies question mark to interim questions', () => {
+    render(
+      <CaptionArea captions={[]} currentInterim="how are you" onFlagWord={onFlagWord} />
+    );
+    expect(screen.getByTestId('interim-text')).toHaveTextContent('how are you?');
   });
 
   it('does not show interim element when empty', () => {
