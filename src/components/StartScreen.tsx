@@ -4,21 +4,20 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useSession } from '@/context/SessionContext';
 
 function IOSTip() {
-  const [show, setShow] = useState(false);
-  useEffect(() => {
-    if (typeof navigator === 'undefined') return;
+  const [show] = useState(() => {
+    if (typeof navigator === 'undefined') return false;
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     let isStandalone = false;
     try {
-      if (typeof window.matchMedia === 'function') {
+      if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
         isStandalone = window.matchMedia('(display-mode: standalone)').matches;
       }
       if (!isStandalone && (navigator as { standalone?: boolean }).standalone === true) isStandalone = true;
     } catch {
       // ignore
     }
-    setShow(isIOS || isStandalone);
-  }, []);
+    return isIOS || isStandalone;
+  });
   if (!show) return null;
   return (
     <p className="text-xs text-white/50 text-center max-w-[280px]">
