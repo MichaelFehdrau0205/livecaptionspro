@@ -19,6 +19,12 @@ export function useAudioPipeline() {
     setStatus('initializing');
     setError(null);
 
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setError('Microphone not supported in this browser. Use a modern browser on a secure connection.');
+      setStatus('error');
+      return null;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -44,6 +50,7 @@ export function useAudioPipeline() {
 
       // Attempt to load RNNoise AudioWorklet (gracefully skipped if unavailable)
       try {
+        // type: 'module' is supported at runtime; TS lib WorkletOptions doesn't include it yet
         await ctx.audioWorklet.addModule('/audio-processor.js', { type: 'module' } as WorkletOptions);
         const workletNode = new AudioWorkletNode(ctx, 'rnnoise-processor');
         source.connect(workletNode);

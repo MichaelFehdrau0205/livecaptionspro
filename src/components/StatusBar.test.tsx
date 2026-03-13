@@ -23,13 +23,8 @@ describe('StatusBar', () => {
     expect(screen.getByText('00:12:34')).toBeInTheDocument();
   });
 
-  it('shows AI enhancement paused message when gap filler is paused', () => {
+  it('does not show AI enhancement paused in status bar (label hidden)', () => {
     render(<StatusBar connectionStatus="connected" timer="00:00:00" gapFillerPaused={true} />);
-    expect(screen.getByText(/AI enhancement paused/i)).toBeInTheDocument();
-  });
-
-  it('does not show AI paused message when not paused', () => {
-    render(<StatusBar connectionStatus="connected" timer="00:00:00" gapFillerPaused={false} />);
     expect(screen.queryByText(/AI enhancement paused/i)).not.toBeInTheDocument();
   });
 });

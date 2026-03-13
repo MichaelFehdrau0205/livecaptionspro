@@ -50,6 +50,8 @@
 | — | **Lighthouse audit score > 90** | Michael | 3/5 |
 | — | **Real device testing** | Both | 5 |
 
+*E2E suite expansion and Lighthouse (PWA + Accessibility > 90) are done — see Day 3 / Day 4 checkboxes.*
+
 ---
 
 ## Work Split Strategy
@@ -197,7 +199,7 @@ Code: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14-20` (rend
   - CaptionLine words: currently `inline` spans — may be too small. Add padding.
   - ControlBar, Start/End buttons: currently min-h-[56px] ✓
 - [x] **Safe area insets** — verify `env(safe-area-inset-bottom)` on ControlBar, add `env(safe-area-inset-top)` to StatusBar
-- [ ] **Run Lighthouse audit**, fix issues (target: PWA > 90, Accessibility > 90)
+- [x] **Run Lighthouse audit**, fix issues (target: PWA > 90, Accessibility > 90)
 - [x] **Write `SessionContext.test.tsx`** — full integration: start/end session, gap filler dispatch
 
 **Luba — API Integration Tests + Gap Filler Hardening**
@@ -217,20 +219,20 @@ Code: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14-20` (rend
 > **Sync at start of day:** Luba merges Days 1–3 PRs so Michael's E2E tests run against real features.
 
 **Michael — E2E Test Suite**
-- [ ] **Expand `e2e/session.spec.ts`**
+- [x] **Expand `e2e/session.spec.ts`**
   - Full happy path: start → mic permission prompt → captions stream → gap filler highlights → end → stats
   - Test connection lost banner (mock offline event)
   - Test session timer increments
   - Test tap-to-flag word turns red
-- [ ] **Expand `e2e/mobile.spec.ts`**
+- [x] **Expand `e2e/mobile.spec.ts`**
   - iPhone viewport (375×812): all touch targets >= 44px
   - Caption area scrolls to bottom on new text
   - ControlBar is in thumb-reachable zone
   - Verify safe area padding renders
-- [ ] **Add `e2e/pwa.spec.ts`**
+- [x] **Add `e2e/pwa.spec.ts`**
   - PWA manifest detected, service worker registers and activates
   - App shell loads from cache on repeat visit
-- [ ] **Test mic pre-prompt dialog** in E2E — dialog shows, buttons work
+- [x] **Test mic pre-prompt dialog** in E2E — dialog shows, buttons work
 
 **Luba — Vercel Deployment + Production Setup**
 - [ ] **Deploy to Vercel**
@@ -247,6 +249,8 @@ Code: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14-20` (rend
 ---
 
 ### Day 5 (Sat, Mar 14) — Real Device Testing + Bug Fixes + Launch
+
+> **Completion:** Use **REAL_DEVICE_TESTING.md** for the full checklist (Lighthouse + iPhone + Android). Use **TESTING.md** § Lighthouse for how to run and interpret Lighthouse.
 
 **Michael — Real Device Testing (most critical day)**
 - [ ] **Test on real iPhone (Safari)** — full end-to-end:
@@ -288,7 +292,7 @@ Code: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14-20` (rend
 
 ---
 
-### Day 6 (Mon, Mar 17) — FIFO Display + Deepgram Setup
+### Day 6 (Tues, Mar 17) — FIFO Display + Deepgram Setup
 
 **Michael — FIFO Data Model + DOM Renderer**
 - [ ] **Define FIFO data model** in `src/types/index.ts`

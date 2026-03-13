@@ -23,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
+        <meta name="theme-color" content="#1a1a2e" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         {/* iOS splash screens — add PNGs to public/splash/ per README */}
@@ -48,7 +49,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       <script src="/register-sw.js" defer />
       </head>
-      <body className="bg-[#1a1a2e] text-white antialiased">{children}</body>
+      <body className="bg-[#1a1a2e] text-white antialiased">
+        <a href="#main-content" className="skip-link">Skip to main content</a>
+        <main id="main-content" className="min-h-screen">{children}</main>
+      </body>
     </html>
   );
 }
