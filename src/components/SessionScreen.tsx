@@ -7,7 +7,7 @@ import { ControlBar } from './ControlBar';
 import { ConnectionBanner } from './ConnectionBanner';
 
 export function SessionScreen() {
-  const { state, dispatch, endSession, connectionStatus, gapFillerPaused, timer, speechError } = useSession();
+  const { state, dispatch, endSession, connectionStatus, gapFillerPaused, timer, speechError, isDeepgramActive } = useSession();
 
   function handleFlagWord(lineId: string, wordIndex: number) {
     dispatch({ type: 'FLAG_WORD', payload: { lineId, wordIndex } });
@@ -19,6 +19,7 @@ export function SessionScreen() {
         connectionStatus={connectionStatus}
         timer={timer}
         gapFillerPaused={gapFillerPaused}
+        isDeepgramActive={isDeepgramActive}
       />
       <ConnectionBanner status={connectionStatus} />
       {speechError && (
