@@ -14,6 +14,7 @@ export interface CaptionLine {
   words: CaptionWord[];
   isFinalized: boolean;
   gapFillerApplied: boolean;
+  speakerId?: number; // 0-based speaker index from Deepgram diarization
 }
 
 export interface SessionStats {

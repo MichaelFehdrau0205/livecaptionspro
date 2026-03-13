@@ -6,7 +6,7 @@ export type SessionAction =
   | { type: 'START_SESSION' }
   | { type: 'ADD_INTERIM'; payload: string }
   | { type: 'FINALIZE_LINE'; payload: string }
-  | { type: 'FINALIZE_LINE_WITH_WORDS'; payload: { words: CaptionWord[] } }
+  | { type: 'FINALIZE_LINE_WITH_WORDS'; payload: { words: CaptionWord[]; speakerId?: number } }
   | { type: 'APPLY_GAP_FILLER'; payload: { lineId: string; words: CaptionWord[] } }
   | { type: 'FLAG_WORD'; payload: { lineId: string; wordIndex: number } }
   | { type: 'END_SESSION' }
@@ -70,13 +70,14 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
     }
 
     case 'FINALIZE_LINE_WITH_WORDS': {
-      const { words } = action.payload;
+      const { words, speakerId } = action.payload;
       if (!words.length) return { ...state, currentInterim: '' };
       const newLine: CaptionLine = {
         id: uuidv4(),
         words,
         isFinalized: true,
         gapFillerApplied: false,
+        speakerId,
       };
       return {
         ...state,

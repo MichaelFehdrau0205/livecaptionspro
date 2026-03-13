@@ -19,3 +19,4 @@ export const GAP_FILLER_CONTEXT_SIZE = 5;
 
 // FIFO caption stage (Week 2 multi-speaker)
 export const MAX_LINES = 8;
+export const MAX_WORDS_PER_LINE = 8;

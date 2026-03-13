@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CaptionWord } from '@/types';
-import { CONFIDENCE_HIGH, CONFIDENCE_MEDIUM } from '@/lib/constants';
+import { CONFIDENCE_HIGH, CONFIDENCE_MEDIUM, MAX_WORDS_PER_LINE } from '@/lib/constants';
 
 export type DeepgramStatus = 'idle' | 'connecting' | 'listening' | 'error';
 
 export interface DeepgramCallbacks {
   onInterim: (text: string) => void;
-  onFinalWords: (words: CaptionWord[]) => void;
+  onFinalWords: (words: CaptionWord[], speakerId: number) => void;
   onError?: (err: string) => void;
 }
 
@@ -20,6 +20,31 @@ interface DeepgramWord {
   end: number;
   confidence: number;
   punctuated_word?: string;
+  speaker?: number;
+}
+
+function groupBySpeaker(words: DeepgramWord[]): Array<{ speakerId: number; words: DeepgramWord[] }> {
+  if (!words.length) return [];
+  const groups: Array<{ speakerId: number; words: DeepgramWord[] }> = [];
+  let currentSpeaker = words[0].speaker ?? 0;
+  let current: DeepgramWord[] = [];
+  for (const word of words) {
+    const speaker = word.speaker ?? 0;
+    if (speaker !== currentSpeaker) {
+      groups.push({ speakerId: currentSpeaker, words: current });
+      current = [];
+      currentSpeaker = speaker;
+    }
+    current.push(word);
+  }
+  if (current.length) groups.push({ speakerId: currentSpeaker, words: current });
+  return groups;
+}
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
+  return chunks;
 }
 
 interface DeepgramResponse {
@@ -115,12 +140,13 @@ export function useDeepgram(callbacks: DeepgramCallbacks) {
     const params = new URLSearchParams({
       model: 'nova-3',
       encoding: 'linear16',
-      sample_rate: String(ctx.sampleRate), // use real device rate, not a guess
+      sample_rate: String(ctx.sampleRate),
       channels: '1',
       interim_results: 'true',
       punctuate: 'true',
       smart_format: 'true',
       language: 'en-US',
+      diarize: 'true',
     });
 
     const ws = new WebSocket(
@@ -170,8 +196,14 @@ export function useDeepgram(callbacks: DeepgramCallbacks) {
         if (!transcript) return;
 
         if (data.is_final) {
-          const words = (alt.words ?? []).map(mapWord);
-          if (words.length > 0) callbacksRef.current.onFinalWords(words);
+          const rawWords = alt.words ?? [];
+          if (!rawWords.length) return;
+          // Group by speaker, then chunk long runs into MAX_WORDS_PER_LINE lines
+          for (const group of groupBySpeaker(rawWords)) {
+            for (const chunk of chunkArray(group.words.map(mapWord), MAX_WORDS_PER_LINE)) {
+              callbacksRef.current.onFinalWords(chunk, group.speakerId);
+            }
+          }
         } else {
           callbacksRef.current.onInterim(transcript);
         }
