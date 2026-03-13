@@ -10,6 +10,7 @@ vi.mock('@/context/SessionContext', () => ({
       captions: [],
       currentInterim: '',
       sessionStartTime: null,
+      sessionEndTime: null,
       stats: { wordCount: 0, aiCorrections: 0 },
       feedbackGiven: null,
     },
@@ -20,6 +21,7 @@ vi.mock('@/context/SessionContext', () => ({
     gapFillerPaused: false,
     timer: '00:00:00',
     audioError: null,
+    speechError: null,
   }),
 }));
 

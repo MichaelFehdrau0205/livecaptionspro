@@ -2,9 +2,10 @@
 
 import { useSession } from '@/context/SessionContext';
 
-function formatDuration(startTime: number | null): string {
+function formatDuration(startTime: number | null, endTime: number | null): string {
   if (!startTime) return '00:00:00';
-  const elapsed = Math.floor((Date.now() - startTime) / 1000);
+  const end = endTime ?? Date.now();
+  const elapsed = Math.floor((end - startTime) / 1000);
   const h = Math.floor(elapsed / 3600);
   const m = Math.floor((elapsed % 3600) / 60);
   const s = elapsed % 60;
@@ -13,8 +14,8 @@ function formatDuration(startTime: number | null): string {
 
 export function SessionEndScreen() {
   const { state, startSession, giveFeedback } = useSession();
-  const { stats, sessionStartTime, feedbackGiven } = state;
-  const duration = formatDuration(sessionStartTime);
+  const { stats, sessionStartTime, sessionEndTime, feedbackGiven } = state;
+  const duration = formatDuration(sessionStartTime, sessionEndTime);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#1a1a2e] px-6 text-white">

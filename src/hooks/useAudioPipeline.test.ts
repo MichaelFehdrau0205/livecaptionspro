@@ -34,6 +34,9 @@ let MockAudioContext: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   vi.clearAllMocks();
 
+  // Secure context so the pipeline does not short-circuit with HTTPS error (e.g. in jsdom)
+  Object.defineProperty(window, 'isSecureContext', { value: true, writable: true, configurable: true });
+
   // Must be a regular function (not arrow) so it can be used as a constructor
   MockAudioContext = vi.fn(function () { return makeMockAudioContext(); });
 

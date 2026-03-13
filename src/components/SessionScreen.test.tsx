@@ -38,6 +38,7 @@ vi.mock('@/context/SessionContext', () => ({
     startSession: vi.fn(),
     giveFeedback: vi.fn(),
     audioError: null,
+    speechError: null,
   }),
 }));
 

@@ -7,9 +7,11 @@ import {
   useEffect,
   useReducer,
   useRef,
+  useState,
   type ReactNode,
 } from 'react';
 import { captionReducer, initialState, type SessionAction } from '@/lib/captionReducer';
+import { addEndPunctuation } from '@/lib/punctuation';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useAudioPipeline } from '@/hooks/useAudioPipeline';
 import { useGapFiller } from '@/hooks/useGapFiller';
@@ -28,14 +30,43 @@ interface SessionContextValue {
   gapFillerPaused: boolean;
   timer: string;
   audioError: string | null;
+  speechError: string | null;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
+const SESSION_STORAGE_KEY = 'livecaptionspro_active';
+const SESSION_STALE_MS = 60000; // 1 min
+
+const restoredSessionRef = { current: false };
+
+function getInitialSessionState(): typeof initialState {
+  if (typeof window === 'undefined') return initialState;
+  try {
+    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (!raw) return initialState;
+    const { at } = JSON.parse(raw);
+    if (Date.now() - at > SESSION_STALE_MS) return initialState;
+    restoredSessionRef.current = true;
+    return { ...initialState, status: 'listening', sessionStartTime: Date.now() };
+  } catch {
+    return initialState;
+  }
+}
+
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(captionReducer, initialState);
+  const [state, dispatch] = useReducer(captionReducer, getInitialSessionState());
   const connectionStatus = useConnectionStatus();
-  const timer = useSessionTimer(state.sessionStartTime);
+  const timer = useSessionTimer(state.sessionStartTime, state.sessionEndTime);
+
+  // Persist "session active" so a refresh/HMR doesn't drop user back to Start
+  useEffect(() => {
+    if (state.status === 'listening') {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ at: Date.now() }));
+    } else if (state.status === 'ended' || state.status === 'idle') {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+  }, [state.status]);
 
   // Track which lineIds we've already sent to gap filler to avoid double-sending
   const submittedLineIds = useRef<Set<string>>(new Set());
@@ -64,9 +95,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const { start: startAudio, stop: stopAudio, error: audioError } = useAudioPipeline();
 
+  const [speechError, setSpeechError] = useState<string | null>(null);
+  const handleSpeechError = useCallback((err: string | undefined) => {
+    const raw = err && String(err).trim();
+    const message =
+      !raw ? 'Speech recognition unavailable.'
+      : raw === 'not-allowed' ? 'Speech recognition not allowed (mic permission or denied).'
+      : raw === 'no-speech' ? 'Speech recognition heard no speech.'
+      : raw === 'audio-capture' ? 'Speech recognition could not capture audio.'
+      : raw === 'network' ? 'Speech recognition failed (network).'
+      : raw === 'aborted' ? 'Speech recognition was aborted.'
+      : raw === 'language-not-supported' ? 'Speech recognition language not supported.'
+      : raw;
+    setSpeechError(message);
+  }, []);
   const { start: startSTT, stop: stopSTT } = useSpeechRecognition({
     onInterim: (text) => dispatch({ type: 'ADD_INTERIM', payload: text }),
-    onFinal: (text) => dispatch({ type: 'FINALIZE_LINE', payload: text }),
+    onFinal: (text) => dispatch({ type: 'FINALIZE_LINE', payload: addEndPunctuation(String(text ?? '').trim()) }),
+    onError: handleSpeechError,
   });
 
   const isListening = state.status === 'listening';
@@ -92,10 +138,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const startSession = useCallback(async () => {
     submittedLineIds.current = new Set();
+    setSpeechError(null);
     const stream = await startAudio();
     if (!stream) return; // permission denied or error — stay idle, audioError is set
     dispatch({ type: 'START_SESSION' });
     startSTT();
+  }, [startAudio, startSTT]);
+
+  // After HMR/refresh we may have restored state to 'listening'; re-start mic and STT
+  useEffect(() => {
+    if (!restoredSessionRef.current) return;
+    restoredSessionRef.current = false;
+    startAudio().then((stream) => {
+      if (stream) startSTT();
+    });
   }, [startAudio, startSTT]);
 
   const endSession = useCallback(() => {
@@ -118,6 +174,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     gapFillerPaused,
     timer,
     audioError,
+    speechError,
   };
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

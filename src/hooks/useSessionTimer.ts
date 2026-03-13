@@ -9,16 +9,26 @@ function formatTime(seconds: number): string {
   return [h, m, s].map((v) => String(v).padStart(2, '0')).join(':');
 }
 
-export function useSessionTimer(startTime: number | null) {
-  const [elapsed, setElapsed] = useState(0);
+function getInitialElapsed(startTime: number | null, endTime: number | null): number {
+  if (startTime === null) return 0;
+  if (endTime != null) return Math.floor((endTime - startTime) / 1000);
+  return Math.floor((Date.now() - startTime) / 1000);
+}
+
+export function useSessionTimer(startTime: number | null, endTime: number | null = null) {
+  const [elapsed, setElapsed] = useState(() => getInitialElapsed(startTime, endTime));
 
   useEffect(() => {
     if (startTime === null) return;
+    if (endTime != null) {
+      setElapsed(Math.floor((endTime - startTime) / 1000));
+      return;
+    }
     const id = setInterval(() => {
       setElapsed(Math.floor((Date.now() - startTime) / 1000));
     }, 1000);
     return () => clearInterval(id);
-  }, [startTime]);
+  }, [startTime, endTime]);
 
   return formatTime(startTime === null ? 0 : elapsed);
 }

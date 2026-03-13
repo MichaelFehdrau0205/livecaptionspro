@@ -13,9 +13,9 @@ describe('captionReducer', () => {
     expect(state.captions).toHaveLength(0);
   });
 
-  it('adds interim text', () => {
+  it('adds interim text with end punctuation (so iPhone shows ? ! . even when finals are rare)', () => {
     const state = dispatch(initialState, { type: 'ADD_INTERIM', payload: 'hello world' });
-    expect(state.currentInterim).toBe('hello world');
+    expect(state.currentInterim).toBe('hello world.');
   });
 
   it('finalizes a line when STT returns final result', () => {
@@ -48,7 +48,7 @@ describe('captionReducer', () => {
       type: 'APPLY_GAP_FILLER',
       payload: { lineId, words: correctedWords },
     });
-    expect(afterGapFill.captions[0].words[1].text).toBe('wonderful');
+    expect(afterGapFill.captions[0].words[1].text).toBe('wonderful.');
     expect(afterGapFill.captions[0].gapFillerApplied).toBe(true);
   });
 
@@ -96,6 +96,15 @@ describe('captionReducer', () => {
   it('handles empty interim results gracefully', () => {
     const state = dispatch(initialState, { type: 'ADD_INTERIM', payload: '' });
     expect(state.currentInterim).toBe('');
+  });
+
+  it('sets sessionEndTime on END_SESSION', () => {
+    const listening = dispatch(initialState, { type: 'START_SESSION' });
+    const beforeEnd = Date.now();
+    const ended = dispatch(listening, { type: 'END_SESSION' });
+    expect(ended.status).toBe('ended');
+    expect(ended.sessionEndTime).not.toBeNull();
+    expect(ended.sessionEndTime!).toBeGreaterThanOrEqual(beforeEnd);
   });
 
   it('sets feedbackGiven on GIVE_FEEDBACK', () => {

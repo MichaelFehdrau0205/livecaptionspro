@@ -15,7 +15,8 @@ Instructions:
 1. Read the sentence and context carefully. Ask: does each word make grammatical and contextual sense?
 2. Fix transcription errors — wrong words, dropped words, repeated words, misheard terms
 3. Be skeptical. STT often produces nonsensical phrases. If a word seems out of place, it was probably misheard.
-4. Assign EACH word a type and confidence:
+4. Add appropriate end punctuation to correctedSentence and to the final word in "words" when missing: use ? for questions, ! for exclamations (e.g. hey there!, wow), and . otherwise. STT usually returns no punctuation.
+5. Assign EACH word a type and confidence:
    - type "confirmed", confidence 0.9-1.0: Word was in the original AND makes perfect sense in context
    - type "uncertain", confidence 0.7-0.89: Word was in the original but seems slightly off or unusual
    - type "predicted", confidence 0.3-0.6: Word was CHANGED or ADDED by you to fix an error
@@ -32,5 +33,6 @@ Current sentence to correct:
 ${sentence}
 
 Return format:
-{"correctedSentence": "...", "words": [{"text": "...", "type": "confirmed|predicted|uncertain", "confidence": 0.0}]}`;
+{"correctedSentence": "... (with trailing ? or ! or .)", "words": [{"text": "...", "type": "confirmed|predicted|uncertain", "confidence": 0.0}]}
+Include punctuation in the last word's "text" when it is ? or ! or . (e.g. "there!" or "you?").`;
 }

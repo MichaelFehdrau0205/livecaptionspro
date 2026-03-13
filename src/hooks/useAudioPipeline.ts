@@ -19,6 +19,13 @@ export function useAudioPipeline() {
     setStatus('initializing');
     setError(null);
 
+    // iOS Safari (and all browsers) require HTTPS for getUserMedia and speech recognition
+    if (typeof window !== 'undefined' && !window.isSecureContext) {
+      setError('Microphone requires HTTPS. On iPhone, use the production URL in Safari (not http:// or a local address).');
+      setStatus('error');
+      return null;
+    }
+
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
       setError('Microphone not supported in this browser. Use a modern browser on a secure connection.');
       setStatus('error');

@@ -3,7 +3,7 @@
 interface StatusBarProps {
   connectionStatus: 'connected' | 'reconnecting' | 'lost';
   timer: string;
-  /** No longer shown in UI (labels hidden); kept for optional future use. */
+  /** Not shown in UI — AI enhancement paused state is intentionally hidden. */
   gapFillerPaused?: boolean;
 }
 

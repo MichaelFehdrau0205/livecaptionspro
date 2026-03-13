@@ -17,7 +17,13 @@ Use this to mark **Lighthouse** and **Real device testing** as complete (PLAN.md
 
 ## 2. iPhone (Safari) — Michael
 
-**Device:** Real iPhone (simulator does not test mic/STT). Use production URL in Safari.
+**Device:** Real iPhone (simulator does not test mic/STT). Use **production URL (HTTPS)** in Safari.
+
+**Important:**  
+- **Speech recognition** requires **HTTPS** — do not use `http://` or a local address on iPhone.  
+- Open the app in **Safari as a browser tab** (e.g. type the URL in the address bar). Speech recognition often **does not work** when the app is launched from **Home Screen** (Add to Home Screen).  
+- Ensure **Dictation** is on: Settings → General → Keyboard → Enable Dictation.  
+- If you don’t see the latest behavior (e.g. punctuation `?` `!` `.` on live text): do a **hard refresh** in Safari (e.g. long-press reload) or clear the site’s data so the app loads the newest bundle.
 
 - [ ] Mic permission pre-prompt shows; tap Allow
 - [ ] AudioContext starts only after tap (no auto-start)
