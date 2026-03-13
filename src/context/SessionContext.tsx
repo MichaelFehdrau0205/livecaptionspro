@@ -114,7 +114,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const { start: startDG, stop: stopDG } = useDeepgram({
     onInterim: (text) => dispatch({ type: 'ADD_INTERIM', payload: text }),
-    onFinalWords: (words) => dispatch({ type: 'FINALIZE_LINE_WITH_WORDS', payload: { words } }),
+    onFinalWords: (words, speakerId) => dispatch({ type: 'FINALIZE_LINE_WITH_WORDS', payload: { words, speakerId } }),
     onError: handleSpeechError,
   });
 
