@@ -115,6 +115,42 @@ describe('captionReducer', () => {
     expect(afterNo.feedbackGiven).toBe('no');
   });
 
+  it('FINALIZE_LINE_WITH_WORDS creates a line with pre-scored words', () => {
+    const words = [
+      { text: 'Hello', type: 'confirmed' as const, confidence: 0.99, flagged: false },
+      { text: 'world', type: 'uncertain' as const, confidence: 0.75, flagged: false },
+    ];
+    const state = dispatch(initialState, { type: 'FINALIZE_LINE_WITH_WORDS', payload: { words } });
+    expect(state.captions).toHaveLength(1);
+    expect(state.captions[0].isFinalized).toBe(true);
+    expect(state.captions[0].words[0].text).toBe('Hello');
+    expect(state.captions[0].words[0].type).toBe('confirmed');
+    expect(state.captions[0].words[1].type).toBe('uncertain');
+    expect(state.captions[0].words[1].confidence).toBe(0.75);
+  });
+
+  it('FINALIZE_LINE_WITH_WORDS increments wordCount', () => {
+    const words = [
+      { text: 'one', type: 'confirmed' as const, confidence: 0.9, flagged: false },
+      { text: 'two', type: 'predicted' as const, confidence: 0.5, flagged: false },
+      { text: 'three', type: 'confirmed' as const, confidence: 0.95, flagged: false },
+    ];
+    const state = dispatch(initialState, { type: 'FINALIZE_LINE_WITH_WORDS', payload: { words } });
+    expect(state.stats.wordCount).toBe(3);
+  });
+
+  it('FINALIZE_LINE_WITH_WORDS clears currentInterim', () => {
+    const withInterim = dispatch(initialState, { type: 'ADD_INTERIM', payload: 'typing' });
+    const words = [{ text: 'done', type: 'confirmed' as const, confidence: 1.0, flagged: false }];
+    const state = dispatch(withInterim, { type: 'FINALIZE_LINE_WITH_WORDS', payload: { words } });
+    expect(state.currentInterim).toBe('');
+  });
+
+  it('FINALIZE_LINE_WITH_WORDS ignores empty words array', () => {
+    const state = dispatch(initialState, { type: 'FINALIZE_LINE_WITH_WORDS', payload: { words: [] } });
+    expect(state.captions).toHaveLength(0);
+  });
+
   it('resets feedbackGiven on START_SESSION', () => {
     const ended = dispatch(initialState, { type: 'END_SESSION' });
     const withFeedback = dispatch(ended, { type: 'GIVE_FEEDBACK', payload: 'yes' });
