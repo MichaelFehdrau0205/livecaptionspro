@@ -14,11 +14,21 @@ import { captionReducer, initialState, type SessionAction } from '@/lib/captionR
 import { addEndPunctuation } from '@/lib/punctuation';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useAudioPipeline } from '@/hooks/useAudioPipeline';
+import { useDeepgram } from '@/hooks/useDeepgram';
 import { useGapFiller } from '@/hooks/useGapFiller';
 import { useConnectionStatus } from '@/hooks/useConnectionStatus';
 import { useWakeLock } from '@/hooks/useWakeLock';
 import { useSessionTimer } from '@/hooks/useSessionTimer';
 import type { SessionState, GapFillerResponse } from '@/types';
+
+function getDeepgramKey(): string | null {
+  if (typeof window === 'undefined') return null;
+  return (
+    localStorage.getItem('deepgram_api_key') ||
+    process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY ||
+    null
+  );
+}
 
 interface SessionContextValue {
   state: SessionState;
@@ -38,24 +48,11 @@ const SessionContext = createContext<SessionContextValue | null>(null);
 const SESSION_STORAGE_KEY = 'livecaptionspro_active';
 const SESSION_STALE_MS = 60000; // 1 min
 
-const restoredSessionRef = { current: false };
-
-function getInitialSessionState(): typeof initialState {
-  if (typeof window === 'undefined') return initialState;
-  try {
-    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
-    if (!raw) return initialState;
-    const { at } = JSON.parse(raw);
-    if (Date.now() - at > SESSION_STALE_MS) return initialState;
-    restoredSessionRef.current = true;
-    return { ...initialState, status: 'listening', sessionStartTime: Date.now() };
-  } catch {
-    return initialState;
-  }
-}
-
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(captionReducer, getInitialSessionState());
+  // Always start with initialState to avoid SSR/client hydration mismatch.
+  // Session restore from sessionStorage happens in a useEffect after mount.
+  const [state, dispatch] = useReducer(captionReducer, initialState);
+  const needsRestoreRef = useRef(false);
   const connectionStatus = useConnectionStatus();
   const timer = useSessionTimer(state.sessionStartTime, state.sessionEndTime);
 
@@ -115,10 +112,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     onError: handleSpeechError,
   });
 
+  const { start: startDG, stop: stopDG } = useDeepgram({
+    onInterim: (text) => dispatch({ type: 'ADD_INTERIM', payload: text }),
+    onFinalWords: (words) => dispatch({ type: 'FINALIZE_LINE_WITH_WORDS', payload: { words } }),
+    onError: handleSpeechError,
+  });
+
   const isListening = state.status === 'listening';
   useWakeLock(isListening);
 
-  // Auto-restart STT and flush gap filler queue on reconnect
+  // Auto-restart STT/Deepgram and flush gap filler queue on reconnect
   const prevConnectionStatusRef = useRef(connectionStatus);
   useEffect(() => {
     const prev = prevConnectionStatusRef.current;
@@ -126,39 +129,69 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
     if (state.status !== 'listening') return;
 
+    const dgKey = getDeepgramKey();
+
     if (prev !== 'lost' && connectionStatus === 'lost') {
-      stopSTT();
+      if (dgKey) stopDG(); else stopSTT();
     }
 
     if (prev !== 'connected' && connectionStatus === 'connected') {
-      startSTT();
+      if (dgKey) startDG(dgKey); else startSTT();
       flushQueue();
     }
-  }, [connectionStatus, state.status, startSTT, stopSTT, flushQueue]);
+  }, [connectionStatus, state.status, startSTT, stopSTT, startDG, stopDG, flushQueue]);
 
   const startSession = useCallback(async () => {
     submittedLineIds.current = new Set();
     setSpeechError(null);
-    const stream = await startAudio();
-    if (!stream) return; // permission denied or error — stay idle, audioError is set
-    dispatch({ type: 'START_SESSION' });
-    startSTT();
-  }, [startAudio, startSTT]);
+    const dgKey = getDeepgramKey();
+    if (dgKey) {
+      // Deepgram manages its own mic + audio streaming
+      dispatch({ type: 'START_SESSION' });
+      startDG(dgKey);
+    } else {
+      // Web Speech API — needs RNNoise audio pipeline first
+      const stream = await startAudio();
+      if (!stream) return;
+      dispatch({ type: 'START_SESSION' });
+      startSTT();
+    }
+  }, [startAudio, startSTT, startDG]);
 
-  // After HMR/refresh we may have restored state to 'listening'; re-start mic and STT
+  // Check sessionStorage after mount — restore active session if page was refreshed
   useEffect(() => {
-    if (!restoredSessionRef.current) return;
-    restoredSessionRef.current = false;
-    startAudio().then((stream) => {
-      if (stream) startSTT();
-    });
-  }, [startAudio, startSTT]);
+    try {
+      const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (!raw) return;
+      const { at } = JSON.parse(raw);
+      if (Date.now() - at > SESSION_STALE_MS) { sessionStorage.removeItem(SESSION_STORAGE_KEY); return; }
+      needsRestoreRef.current = true;
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Re-start audio/STT after session restore
+  useEffect(() => {
+    if (!needsRestoreRef.current) return;
+    needsRestoreRef.current = false;
+    dispatch({ type: 'START_SESSION' });
+    const dgKey = getDeepgramKey();
+    if (dgKey) {
+      startDG(dgKey);
+    } else {
+      startAudio().then((stream) => { if (stream) startSTT(); });
+    }
+  }, [startAudio, startSTT, startDG]);
 
   const endSession = useCallback(() => {
-    stopSTT();
-    stopAudio();
+    if (getDeepgramKey()) {
+      stopDG();
+    } else {
+      stopSTT();
+      stopAudio();
+    }
     dispatch({ type: 'END_SESSION' });
-  }, [stopSTT, stopAudio]);
+  }, [stopSTT, stopAudio, stopDG]);
 
   const giveFeedback = useCallback((choice: 'yes' | 'no') => {
     dispatch({ type: 'GIVE_FEEDBACK', payload: choice });
