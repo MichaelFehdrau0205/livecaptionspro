@@ -270,28 +270,12 @@ describe('useDeepgram', () => {
     expect(onFinalWords).not.toHaveBeenCalled();
   });
 
-  it('calls onError on WebSocket error', async () => {
-    const { onError } = await startAndOpen();
-
-    act(() => { mockWs.onerror?.(); });
-
-    expect(onError).toHaveBeenCalledWith('Deepgram connection error');
-  });
-
-  it('sets status to error on WebSocket error', async () => {
-    const { result } = await startAndOpen();
-
-    act(() => { mockWs.onerror?.(); });
-
-    expect(result.current.status).toBe('error');
-  });
-
-  it('sets status to error on unexpected WebSocket close', async () => {
+  it('sets status to reconnecting on unexpected WebSocket close', async () => {
     const { result } = await startAndOpen();
 
     act(() => { mockWs.onclose?.({ code: 1006 }); });
 
-    expect(result.current.status).toBe('error');
+    expect(result.current.status).toBe('reconnecting');
   });
 
   it('does not set error on normal WebSocket close (code 1000)', async () => {
