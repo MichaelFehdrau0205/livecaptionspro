@@ -150,6 +150,7 @@ export function StartScreen() {
                 className="w-full py-3 rounded-2xl border border-white/30 text-white/80 font-medium
                   hover:bg-white/10 active:scale-95 transition-all min-h-[48px] cursor-pointer touch-manipulation"
                 data-testid="cancel-mic-prompt"
+                aria-label="Cancel and stay on start screen"
               >
                 Cancel
               </button>

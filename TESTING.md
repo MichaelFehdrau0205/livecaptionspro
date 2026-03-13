@@ -3,7 +3,7 @@
 ## Automated Tests
 
 ```bash
-npm run test          # Unit tests (Vitest) — 116 tests across 12 files
+npm run test          # Unit tests (Vitest) — 150 tests across 17 files
 npm run test:watch    # Watch mode for TDD
 npm run test:e2e      # Playwright E2E — auto-starts dev server
 npm run lint          # ESLint
@@ -87,21 +87,30 @@ To confirm Gemini is being called (not just fallback):
 
 ---
 
-## Lighthouse Audit (PWA)
+## Lighthouse Audit (PWA) — Completion Steps
 
-Target scores: **PWA > 90, Accessibility > 90, Performance > 80**
+**Target scores: PWA > 90, Accessibility > 90** (Performance optional but aim > 80)
 
-```
-# In Chrome DevTools → Lighthouse tab
-# Mode: Navigation
-# Device: Mobile
-# Run on production URL (not localhost)
-```
+### Option A: npm script (local)
+
+1. Start the app: `npm run dev` (must be on port 3000).
+2. Run: `npm run lighthouse`
+3. Open `lighthouse-report.html` in the project root (it’s in `.gitignore`).
+4. In the report, confirm **PWA** and **Accessibility** category scores are **≥ 90**.
+5. If either is below 90, fix the listed issues and re-run.
+
+### Option B: Chrome DevTools (production or local)
+
+1. Open the app in Chrome (localhost:3000 or production URL).
+2. DevTools → **Lighthouse** tab → Mode: **Navigation**, Device: **Mobile**.
+3. Select categories **Progressive Web App** and **Accessibility**, then **Analyze**.
+4. Confirm PWA and Accessibility scores **≥ 90**.
+
+**Lighthouse = complete** when you have a run (Option A or B) where both PWA and Accessibility are ≥ 90. For Day 5, run again on the production URL before launch.
 
 Key checks:
-- PWA: installable, service worker active, manifest valid
-- Accessibility: all interactive elements have labels, color contrast meets WCAG AA
-- Performance: largest contentful paint < 2.5s on mobile
+- **PWA:** installable, service worker active, manifest valid, theme-color
+- **Accessibility:** interactive elements have labels, color contrast WCAG AA, focus-visible, skip link
 
 ---
 

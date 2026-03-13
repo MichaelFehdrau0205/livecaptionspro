@@ -50,6 +50,8 @@
 | — | **Lighthouse audit score > 90** | Michael | 3/5 |
 | — | **Real device testing** | Both | 5 |
 
+*E2E suite expansion and Lighthouse (PWA + Accessibility > 90) are done — see Day 3 / Day 4 checkboxes.*
+
 ---
 
 ## Work Split Strategy
@@ -197,7 +199,7 @@ Code: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14-20` (rend
   - CaptionLine words: currently `inline` spans — may be too small. Add padding.
   - ControlBar, Start/End buttons: currently min-h-[56px] ✓
 - [x] **Safe area insets** — verify `env(safe-area-inset-bottom)` on ControlBar, add `env(safe-area-inset-top)` to StatusBar
-- [ ] **Run Lighthouse audit**, fix issues (target: PWA > 90, Accessibility > 90)
+- [x] **Run Lighthouse audit**, fix issues (target: PWA > 90, Accessibility > 90)
 - [x] **Write `SessionContext.test.tsx`** — full integration: start/end session, gap filler dispatch
 
 **Luba — API Integration Tests + Gap Filler Hardening**
@@ -247,6 +249,8 @@ Code: `gapFillerParser.ts:11-28` (classification), `CaptionLine.tsx:14-20` (rend
 ---
 
 ### Day 5 (Sat, Mar 14) — Real Device Testing + Bug Fixes + Launch
+
+> **Completion:** Use **REAL_DEVICE_TESTING.md** for the full checklist (Lighthouse + iPhone + Android). Use **TESTING.md** § Lighthouse for how to run and interpret Lighthouse.
 
 **Michael — Real Device Testing (most critical day)**
 - [ ] **Test on real iPhone (Safari)** — full end-to-end:
