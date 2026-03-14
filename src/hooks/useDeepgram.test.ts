@@ -333,7 +333,7 @@ describe('useDeepgram', () => {
 
   // ─── Diarization ─────────────────────────────────────────────────────────────
 
-  it('passes speakerId=0 when no speaker field is present', async () => {
+  it('maps Deepgram speaker 0 to profile id 1', async () => {
     const { onFinalWords } = await startAndOpen();
 
     act(() => {
@@ -344,10 +344,10 @@ describe('useDeepgram', () => {
       });
     });
 
-    expect(onFinalWords.mock.calls[0][1]).toBe(0);
+    expect(onFinalWords.mock.calls[0][1]).toBe(1); // 0 + 1
   });
 
-  it('passes correct speakerId for single speaker', async () => {
+  it('maps Deepgram speaker 1 to profile id 2', async () => {
     const { onFinalWords } = await startAndOpen();
 
     act(() => {
@@ -360,7 +360,7 @@ describe('useDeepgram', () => {
     });
 
     expect(onFinalWords).toHaveBeenCalledOnce();
-    expect(onFinalWords.mock.calls[0][1]).toBe(1);
+    expect(onFinalWords.mock.calls[0][1]).toBe(2); // 1 + 1
   });
 
   it('splits into two calls when speaker changes mid-result', async () => {
@@ -377,10 +377,10 @@ describe('useDeepgram', () => {
     });
 
     expect(onFinalWords).toHaveBeenCalledTimes(2);
-    expect(onFinalWords.mock.calls[0][1]).toBe(0); // first group: speaker 0
-    expect(onFinalWords.mock.calls[0][0]).toHaveLength(1); // "hello"
-    expect(onFinalWords.mock.calls[1][1]).toBe(1); // second group: speaker 1
-    expect(onFinalWords.mock.calls[1][0]).toHaveLength(2); // "yes indeed"
+    expect(onFinalWords.mock.calls[0][1]).toBe(1); // speaker 0 → profile 1
+    expect(onFinalWords.mock.calls[0][0]).toHaveLength(1);
+    expect(onFinalWords.mock.calls[1][1]).toBe(2); // speaker 1 → profile 2
+    expect(onFinalWords.mock.calls[1][0]).toHaveLength(2);
   });
 
   it('chunks more than 8 words into multiple lines', async () => {
@@ -398,13 +398,11 @@ describe('useDeepgram', () => {
       });
     });
 
-    // 10 words → chunk of 8 + chunk of 2 = 2 calls
     expect(onFinalWords).toHaveBeenCalledTimes(2);
     expect(onFinalWords.mock.calls[0][0]).toHaveLength(8);
     expect(onFinalWords.mock.calls[1][0]).toHaveLength(2);
-    // both chunks from same speaker
-    expect(onFinalWords.mock.calls[0][1]).toBe(0);
-    expect(onFinalWords.mock.calls[1][1]).toBe(0);
+    expect(onFinalWords.mock.calls[0][1]).toBe(1); // speaker 0 → profile 1
+    expect(onFinalWords.mock.calls[1][1]).toBe(1);
   });
 
   it('includes diarize=true in WebSocket URL', async () => {

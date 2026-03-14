@@ -32,13 +32,14 @@ function groupBySpeaker(words: DeepgramWord[]): Array<{ speakerId: number; words
   for (const word of words) {
     const speaker = word.speaker ?? 0;
     if (speaker !== currentSpeaker) {
-      groups.push({ speakerId: currentSpeaker, words: current });
+      // +1 converts Deepgram 0-based speaker index to 1-based profile ID (SPEAKERS array starts at id:1)
+      groups.push({ speakerId: currentSpeaker + 1, words: current });
       current = [];
       currentSpeaker = speaker;
     }
     current.push(word);
   }
-  if (current.length) groups.push({ speakerId: currentSpeaker, words: current });
+  if (current.length) groups.push({ speakerId: currentSpeaker + 1, words: current });
   return groups;
 }
 
@@ -115,6 +116,11 @@ export function useDeepgram(callbacks: DeepgramCallbacks) {
     streamRef.current = null;
 
     if (wsRef.current) {
+      // Null out handlers first so async onclose/onerror can't trigger retry after stop()
+      wsRef.current.onopen = null;
+      wsRef.current.onmessage = null;
+      wsRef.current.onerror = null;
+      wsRef.current.onclose = null;
       if (wsRef.current.readyState === WebSocket.OPEN) {
         try { wsRef.current.send(JSON.stringify({ type: 'CloseStream' })); } catch { /* ignore */ }
       }

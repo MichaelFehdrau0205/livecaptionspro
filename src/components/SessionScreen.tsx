@@ -24,7 +24,7 @@ function useShowIOSTip() {
 }
 
 export function SessionScreen() {
-  const { state, dispatch, endSession, connectionStatus, gapFillerPaused, timer, speechError, isDeepgramActive } = useSession();
+  const { state, dispatch, endSession, restartSession, connectionStatus, gapFillerPaused, timer, speechError, isDeepgramActive } = useSession();
   const [displayMode, setDisplayMode] = useDisplayMode();
   const showIOSTip = useShowIOSTip();
 
@@ -44,7 +44,7 @@ export function SessionScreen() {
       <div className="flex items-center justify-center gap-2 px-4 py-2 border-b border-white/10 bg-[#1a1a2e]" role="group" aria-label="Caption mode">
         <button
           type="button"
-          onClick={() => setDisplayMode('lecture')}
+          onClick={() => { if (displayMode !== 'lecture') { setDisplayMode('lecture'); restartSession(); } }}
           className={`min-h-[40px] min-w-[90px] rounded-lg px-3 py-1.5 text-xs font-semibold transition-all touch-manipulation ${
             displayMode === 'lecture'
               ? 'bg-white/25 text-white'
@@ -58,7 +58,7 @@ export function SessionScreen() {
         </button>
         <button
           type="button"
-          onClick={() => setDisplayMode('group')}
+          onClick={() => { if (displayMode !== 'group') { setDisplayMode('group'); restartSession(); } }}
           className={`min-h-[40px] min-w-[90px] rounded-lg px-3 py-1.5 text-xs font-semibold transition-all touch-manipulation ${
             displayMode === 'group'
               ? 'bg-white/25 text-white'

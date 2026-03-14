@@ -28,20 +28,22 @@ describe('CaptionLine', () => {
     expect(onFlagWord).toHaveBeenCalledWith('test-line-1', 0);
   });
 
-  it('renders flagged line with red underline', () => {
+  it('renders flagged word with red underline in lecture mode', () => {
     const line = makeLine([{ text: 'hello', type: 'confirmed', confidence: 1.0, flagged: true }]);
-    const { container } = render(<CaptionLine line={line} lineIndex={0} onFlagWord={vi.fn()} />);
+    const { container } = render(<CaptionLine line={line} lineIndex={0} onFlagWord={vi.fn()} displayMode="lecture" />);
     expect(container.querySelector('.border-red-500')).toBeInTheDocument();
     expect(screen.getByText(/hello/)).toBeInTheDocument();
   });
 
-  it('renders full sentence (wraps with others on row)', () => {
+  it('renders all words in lecture mode', () => {
     const line = makeLine([
       { text: 'The', type: 'confirmed', confidence: 1.0, flagged: false },
       { text: 'executive', type: 'predicted', confidence: 0.5, flagged: false },
       { text: 'branch', type: 'uncertain', confidence: 0.8, flagged: false },
     ]);
-    render(<CaptionLine line={line} lineIndex={0} onFlagWord={vi.fn()} />);
-    expect(screen.getByText(/The executive branch/)).toBeInTheDocument();
+    render(<CaptionLine line={line} lineIndex={0} onFlagWord={vi.fn()} displayMode="lecture" />);
+    expect(screen.getByText(/The/)).toBeInTheDocument();
+    expect(screen.getByText(/executive/)).toBeInTheDocument();
+    expect(screen.getByText(/branch/)).toBeInTheDocument();
   });
 });

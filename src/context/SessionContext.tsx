@@ -36,6 +36,7 @@ interface SessionContextValue {
   dispatch: React.Dispatch<SessionAction>;
   startSession: () => Promise<void>;
   endSession: () => void;
+  restartSession: () => Promise<void>;
   isDeepgramActive: boolean;
   giveFeedback: (choice: 'yes' | 'no') => void;
   connectionStatus: ReturnType<typeof useConnectionStatus>;
@@ -238,6 +239,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'END_SESSION' });
   }, [stopSTT, stopAudio, stopDG]);
 
+  // Clears captions and restarts transcription — used when switching display modes
+  const restartSession = useCallback(async () => {
+    if (state.status !== 'listening') return;
+    const dgKey = getDeepgramKey();
+    if (dgKey) {
+      stopDG();
+    } else {
+      stopSTT();
+      stopAudio();
+    }
+    submittedLineIds.current = new Set();
+    setSpeechError(null);
+    if (dgKey) {
+      dispatch({ type: 'START_SESSION' });
+      startDG(dgKey);
+    } else {
+      const stream = await startAudio();
+      if (!stream) return;
+      dispatch({ type: 'START_SESSION' });
+      startSTT();
+    }
+  }, [state.status, stopDG, stopSTT, stopAudio, startDG, startSTT, startAudio]);
+
   const giveFeedback = useCallback((choice: 'yes' | 'no') => {
     dispatch({ type: 'GIVE_FEEDBACK', payload: choice });
   }, []);
@@ -247,6 +271,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     dispatch,
     startSession,
     endSession,
+    restartSession,
     giveFeedback,
     connectionStatus,
     gapFillerPaused,
