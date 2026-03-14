@@ -114,7 +114,11 @@ async function startAndOpen(apiKey = 'test-key', callbacks = {}) {
   return { result, onInterim, onFinalWords, onError };
 }
 
-function makeDeepgramMsg(transcript: string, isFinal: boolean, words: { word: string; confidence: number; punctuated_word?: string }[] = []) {
+function makeDeepgramMsg(
+  transcript: string,
+  isFinal: boolean,
+  words: { word: string; confidence: number; punctuated_word?: string; speaker?: number }[] = []
+) {
   return JSON.stringify({
     is_final: isFinal,
     channel: { alternatives: [{ transcript, confidence: 0.9, words }] },
@@ -266,28 +270,12 @@ describe('useDeepgram', () => {
     expect(onFinalWords).not.toHaveBeenCalled();
   });
 
-  it('calls onError on WebSocket error', async () => {
-    const { onError } = await startAndOpen();
-
-    act(() => { mockWs.onerror?.(); });
-
-    expect(onError).toHaveBeenCalledWith('Deepgram connection error');
-  });
-
-  it('sets status to error on WebSocket error', async () => {
-    const { result } = await startAndOpen();
-
-    act(() => { mockWs.onerror?.(); });
-
-    expect(result.current.status).toBe('error');
-  });
-
-  it('sets status to error on unexpected WebSocket close', async () => {
+  it('sets status to reconnecting on unexpected WebSocket close', async () => {
     const { result } = await startAndOpen();
 
     act(() => { mockWs.onclose?.({ code: 1006 }); });
 
-    expect(result.current.status).toBe('error');
+    expect(result.current.status).toBe('reconnecting');
   });
 
   it('does not set error on normal WebSocket close (code 1000)', async () => {
@@ -341,5 +329,87 @@ describe('useDeepgram', () => {
     const { result } = await startAndOpen();
     act(() => { result.current.stop(); });
     expect(mockCtxClose).toHaveBeenCalled();
+  });
+
+  // ─── Diarization ─────────────────────────────────────────────────────────────
+
+  it('passes speakerId=0 when no speaker field is present', async () => {
+    const { onFinalWords } = await startAndOpen();
+
+    act(() => {
+      mockWs.onmessage?.({
+        data: makeDeepgramMsg('hello', true, [
+          { word: 'hello', confidence: 0.95 },
+        ]),
+      });
+    });
+
+    expect(onFinalWords.mock.calls[0][1]).toBe(0);
+  });
+
+  it('passes correct speakerId for single speaker', async () => {
+    const { onFinalWords } = await startAndOpen();
+
+    act(() => {
+      mockWs.onmessage?.({
+        data: makeDeepgramMsg('hello world', true, [
+          { word: 'hello', confidence: 0.95, speaker: 1 },
+          { word: 'world', confidence: 0.95, speaker: 1 },
+        ]),
+      });
+    });
+
+    expect(onFinalWords).toHaveBeenCalledOnce();
+    expect(onFinalWords.mock.calls[0][1]).toBe(1);
+  });
+
+  it('splits into two calls when speaker changes mid-result', async () => {
+    const { onFinalWords } = await startAndOpen();
+
+    act(() => {
+      mockWs.onmessage?.({
+        data: makeDeepgramMsg('hello yes indeed', true, [
+          { word: 'hello', confidence: 0.95, speaker: 0 },
+          { word: 'yes', confidence: 0.95, speaker: 1 },
+          { word: 'indeed', confidence: 0.95, speaker: 1 },
+        ]),
+      });
+    });
+
+    expect(onFinalWords).toHaveBeenCalledTimes(2);
+    expect(onFinalWords.mock.calls[0][1]).toBe(0); // first group: speaker 0
+    expect(onFinalWords.mock.calls[0][0]).toHaveLength(1); // "hello"
+    expect(onFinalWords.mock.calls[1][1]).toBe(1); // second group: speaker 1
+    expect(onFinalWords.mock.calls[1][0]).toHaveLength(2); // "yes indeed"
+  });
+
+  it('chunks more than 8 words into multiple lines', async () => {
+    const { onFinalWords } = await startAndOpen();
+
+    const words = Array.from({ length: 10 }, (_, i) => ({
+      word: `word${i}`,
+      confidence: 0.95,
+      speaker: 0,
+    }));
+
+    act(() => {
+      mockWs.onmessage?.({
+        data: makeDeepgramMsg(words.map(w => w.word).join(' '), true, words),
+      });
+    });
+
+    // 10 words → chunk of 8 + chunk of 2 = 2 calls
+    expect(onFinalWords).toHaveBeenCalledTimes(2);
+    expect(onFinalWords.mock.calls[0][0]).toHaveLength(8);
+    expect(onFinalWords.mock.calls[1][0]).toHaveLength(2);
+    // both chunks from same speaker
+    expect(onFinalWords.mock.calls[0][1]).toBe(0);
+    expect(onFinalWords.mock.calls[1][1]).toBe(0);
+  });
+
+  it('includes diarize=true in WebSocket URL', async () => {
+    await startAndOpen();
+    const url: string = (MockWebSocket.mock.calls[0] as [string, string[]])[0];
+    expect(url).toContain('diarize=true');
   });
 });

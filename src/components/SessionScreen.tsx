@@ -9,8 +9,8 @@ import { ControlBar } from './ControlBar';
 import { ConnectionBanner } from './ConnectionBanner';
 
 function useShowIOSTip() {
-  const [show, setShow] = useState(false);
-  useEffect(() => {
+  const [show] = useState(() => {
+    if (typeof navigator === 'undefined') return false;
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     let isStandalone = false;
     try {
@@ -18,13 +18,13 @@ function useShowIOSTip() {
     } catch {
       /* ignore */
     }
-    setShow(isIOS || isStandalone);
-  }, []);
+    return isIOS || isStandalone;
+  });
   return show;
 }
 
 export function SessionScreen() {
-  const { state, dispatch, endSession, connectionStatus, gapFillerPaused, timer, speechError } = useSession();
+  const { state, dispatch, endSession, connectionStatus, gapFillerPaused, timer, speechError, isDeepgramActive } = useSession();
   const [displayMode, setDisplayMode] = useDisplayMode();
   const showIOSTip = useShowIOSTip();
 
@@ -38,6 +38,7 @@ export function SessionScreen() {
         connectionStatus={connectionStatus}
         timer={timer}
         gapFillerPaused={gapFillerPaused}
+        isDeepgramActive={isDeepgramActive}
       />
       {/* Lecture vs Group: upper part, near listening */}
       <div className="flex items-center justify-center gap-2 px-4 py-2 border-b border-white/10 bg-[#1a1a2e]" role="group" aria-label="Caption mode">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { DISPLAY_MODE_KEY, type DisplayMode } from '@/lib/constants';
 
 function getStored(): DisplayMode {
@@ -15,11 +15,7 @@ function getStored(): DisplayMode {
 }
 
 export function useDisplayMode(): [DisplayMode, (mode: DisplayMode) => void] {
-  const [mode, setModeState] = useState<DisplayMode>('group');
-
-  useEffect(() => {
-    setModeState(getStored());
-  }, []);
+  const [mode, setModeState] = useState<DisplayMode>(getStored);
 
   const setMode = useCallback((next: DisplayMode) => {
     setModeState(next);

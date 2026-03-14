@@ -2,14 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CaptionWord } from '@/types';
-import { CONFIDENCE_HIGH, CONFIDENCE_MEDIUM } from '@/lib/constants';
+import { CONFIDENCE_HIGH, CONFIDENCE_MEDIUM, MAX_WORDS_PER_LINE } from '@/lib/constants';
 
-export type DeepgramStatus = 'idle' | 'connecting' | 'listening' | 'error';
+export type DeepgramStatus = 'idle' | 'connecting' | 'listening' | 'reconnecting' | 'error';
 
 export interface DeepgramCallbacks {
   onInterim: (text: string) => void;
-  /** words + optional speakerId (1–4) from diarization; when different voice detected, Deepgram sends a different speaker. */
-  onFinalWords: (words: CaptionWord[], speakerId?: number) => void;
+  onFinalWords: (words: CaptionWord[], speakerId: number) => void;
   onError?: (err: string) => void;
 }
 
@@ -23,6 +22,30 @@ interface DeepgramWord {
   punctuated_word?: string;
   /** Present when diarize=true (streaming: speaker only, no speaker_confidence). */
   speaker?: number;
+}
+
+function groupBySpeaker(words: DeepgramWord[]): Array<{ speakerId: number; words: DeepgramWord[] }> {
+  if (!words.length) return [];
+  const groups: Array<{ speakerId: number; words: DeepgramWord[] }> = [];
+  let currentSpeaker = words[0].speaker ?? 0;
+  let current: DeepgramWord[] = [];
+  for (const word of words) {
+    const speaker = word.speaker ?? 0;
+    if (speaker !== currentSpeaker) {
+      groups.push({ speakerId: currentSpeaker, words: current });
+      current = [];
+      currentSpeaker = speaker;
+    }
+    current.push(word);
+  }
+  if (current.length) groups.push({ speakerId: currentSpeaker, words: current });
+  return groups;
+}
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
+  return chunks;
 }
 
 interface DeepgramResponse {
@@ -55,25 +78,8 @@ function mapWord(dg: DeepgramWord): CaptionWord {
   return { text: dg.punctuated_word ?? dg.word, type, confidence: conf, flagged: false };
 }
 
-/** Majority speaker in segment (0-based from Deepgram). Returns 1–4 for UI (speaker 1 = white/no box, 2–4 = colored). */
-function speakerFromWords(dgWords: DeepgramWord[]): number | undefined {
-  if (!dgWords.length) return undefined;
-  const counts: Record<number, number> = {};
-  for (const w of dgWords) {
-    const s = w.speaker ?? 0;
-    counts[s] = (counts[s] ?? 0) + 1;
-  }
-  let best = 0;
-  let maxCount = 0;
-  for (const [s, c] of Object.entries(counts)) {
-    const n = Number(s);
-    if (c > maxCount) {
-      maxCount = c;
-      best = n;
-    }
-  }
-  return Math.min(best + 1, 4);
-}
+const BACKOFF_INITIAL_MS = 1000;
+const BACKOFF_MAX_MS = 4000;
 
 export function useDeepgram(callbacks: DeepgramCallbacks) {
   const [status, setStatus] = useState<DeepgramStatus>('idle');
@@ -83,6 +89,10 @@ export function useDeepgram(callbacks: DeepgramCallbacks) {
   const workletRef = useRef<AudioWorkletNode | null>(null);
   const activeRef = useRef(false);
   const callbacksRef = useRef(callbacks);
+  const apiKeyRef = useRef('');
+  const retryDelayRef = useRef(BACKOFF_INITIAL_MS);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectRef = useRef<(key: string) => void>(() => {});
 
   useEffect(() => {
     callbacksRef.current = callbacks;
@@ -90,6 +100,8 @@ export function useDeepgram(callbacks: DeepgramCallbacks) {
 
   const stop = useCallback(() => {
     activeRef.current = false;
+    if (retryTimerRef.current) { clearTimeout(retryTimerRef.current); retryTimerRef.current = null; }
+    retryDelayRef.current = BACKOFF_INITIAL_MS;
 
     workletRef.current?.disconnect();
     workletRef.current = null;
@@ -113,32 +125,15 @@ export function useDeepgram(callbacks: DeepgramCallbacks) {
     setStatus('idle');
   }, []);
 
-  const start = useCallback(async (apiKey: string) => {
-    if (activeRef.current) return;
-    activeRef.current = true;
-    setStatus('connecting');
-
-    // 1. Request mic within user gesture chain so browser shows permission dialog
-    let stream: MediaStream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      callbacksRef.current.onError?.('Microphone access denied');
-      setStatus('error');
-      activeRef.current = false;
-      return;
-    }
-    streamRef.current = stream;
-
-    // 2. Create AudioContext now to read the actual device sample rate
-    const ctx = new AudioContext();
-    audioCtxRef.current = ctx;
-    if (ctx.state === 'suspended') await ctx.resume();
+  const connectWebSocket = useCallback((apiKey: string) => {
+    const ctx = audioCtxRef.current;
+    const stream = streamRef.current;
+    if (!ctx || !stream) return;
 
     const params = new URLSearchParams({
       model: 'nova-3',
       encoding: 'linear16',
-      sample_rate: String(ctx.sampleRate), // use real device rate, not a guess
+      sample_rate: String(ctx.sampleRate),
       channels: '1',
       interim_results: 'true',
       punctuate: 'true',
@@ -156,10 +151,11 @@ export function useDeepgram(callbacks: DeepgramCallbacks) {
 
     ws.onopen = async () => {
       if (!activeRef.current) { ws.close(); return; }
+      retryDelayRef.current = BACKOFF_INITIAL_MS; // reset backoff on success
 
       try {
         await ctx.audioWorklet.addModule(PCM_WORKLET, { type: 'module' } as WorkletOptions);
-      } catch (err) {
+      } catch {
         callbacksRef.current.onError?.('Failed to load audio processor');
         setStatus('error');
         activeRef.current = false;
@@ -179,7 +175,6 @@ export function useDeepgram(callbacks: DeepgramCallbacks) {
 
       source.connect(worklet);
       worklet.connect(ctx.destination);
-
       setStatus('listening');
     };
 
@@ -189,15 +184,17 @@ export function useDeepgram(callbacks: DeepgramCallbacks) {
         const data: DeepgramResponse = JSON.parse(event.data as string);
         const alt = data.channel?.alternatives?.[0];
         if (!alt) return;
-
         const transcript = alt.transcript?.trim();
         if (!transcript) return;
 
         if (data.is_final) {
-          const dgWords = alt.words ?? [];
-          const words = dgWords.map(mapWord);
-          const speakerId = speakerFromWords(dgWords);
-          if (words.length > 0) callbacksRef.current.onFinalWords(words, speakerId);
+          const rawWords = alt.words ?? [];
+          if (!rawWords.length) return;
+          for (const group of groupBySpeaker(rawWords)) {
+            for (const chunk of chunkArray(group.words.map(mapWord), MAX_WORDS_PER_LINE)) {
+              callbacksRef.current.onFinalWords(chunk, group.speakerId);
+            }
+          }
         } else {
           callbacksRef.current.onInterim(transcript);
         }
@@ -208,18 +205,50 @@ export function useDeepgram(callbacks: DeepgramCallbacks) {
 
     ws.onerror = () => {
       if (!activeRef.current) return;
-      callbacksRef.current.onError?.('Deepgram connection error');
-      setStatus('error');
+      // onerror is always followed by onclose — let onclose handle retry
     };
 
     ws.onclose = (e) => {
       if (!activeRef.current) return;
-      if (e.code !== 1000 && e.code !== 1001) {
-        callbacksRef.current.onError?.(`Deepgram disconnected (${e.code})`);
-        setStatus('error');
-      }
+      if (e.code === 1000 || e.code === 1001) return; // intentional close
+
+      // Unexpected disconnect — retry with exponential backoff
+      setStatus('reconnecting');
+      retryTimerRef.current = setTimeout(() => {
+        if (!activeRef.current) return;
+        retryDelayRef.current = Math.min(retryDelayRef.current * 2, BACKOFF_MAX_MS);
+        connectRef.current(apiKeyRef.current);
+      }, retryDelayRef.current);
     };
   }, []);
+
+  useEffect(() => { connectRef.current = connectWebSocket; }, [connectWebSocket]);
+
+  const start = useCallback(async (apiKey: string) => {
+    if (activeRef.current) return;
+    activeRef.current = true;
+    apiKeyRef.current = apiKey;
+    setStatus('connecting');
+
+    // Request mic within user gesture chain so browser shows permission dialog
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      callbacksRef.current.onError?.('Microphone access denied');
+      setStatus('error');
+      activeRef.current = false;
+      return;
+    }
+    streamRef.current = stream;
+
+    // Create AudioContext to read actual device sample rate
+    const ctx = new AudioContext();
+    audioCtxRef.current = ctx;
+    if (ctx.state === 'suspended') await ctx.resume();
+
+    connectWebSocket(apiKey);
+  }, [connectWebSocket]);
 
   useEffect(() => {
     return () => { stop(); };

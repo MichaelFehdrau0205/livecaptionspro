@@ -87,7 +87,7 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
         words,
         isFinalized: true,
         gapFillerApplied: false,
-        ...(speakerId != null && speakerId >= 1 && speakerId <= 4 ? { speakerId } : {}),
+        speakerId,
       };
       const nextCaptions = capCaptions([...state.captions, newLine]);
       return {

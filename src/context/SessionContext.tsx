@@ -36,6 +36,7 @@ interface SessionContextValue {
   dispatch: React.Dispatch<SessionAction>;
   startSession: () => Promise<void>;
   endSession: () => void;
+  isDeepgramActive: boolean;
   giveFeedback: (choice: 'yes' | 'no') => void;
   connectionStatus: ReturnType<typeof useConnectionStatus>;
   gapFillerPaused: boolean;
@@ -252,6 +253,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     timer,
     audioError,
     speechError,
+    isDeepgramActive: !!getDeepgramKey(),
   };
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

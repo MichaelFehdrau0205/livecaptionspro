@@ -1,13 +1,16 @@
 'use client';
 
+import { DemoModeBadge } from './DemoModeBadge';
+
 interface StatusBarProps {
   connectionStatus: 'connected' | 'reconnecting' | 'lost';
   timer: string;
   /** Not shown in UI — AI enhancement paused state is intentionally hidden. */
   gapFillerPaused?: boolean;
+  isDeepgramActive?: boolean;
 }
 
-export function StatusBar({ connectionStatus, timer }: StatusBarProps) {
+export function StatusBar({ connectionStatus, timer, isDeepgramActive }: StatusBarProps) {
   const isConnected = connectionStatus === 'connected';
 
   return (
@@ -31,10 +34,13 @@ export function StatusBar({ connectionStatus, timer }: StatusBarProps) {
         </span>
       </div>
 
-      {/* Timer */}
-      <span className="text-sm font-mono text-white/60" data-testid="session-timer">
-        {timer}
-      </span>
+      <div className="flex items-center gap-3">
+        {!isDeepgramActive && <DemoModeBadge />}
+        {/* Timer */}
+        <span className="text-sm font-mono text-white/60" data-testid="session-timer">
+          {timer}
+        </span>
+      </div>
     </div>
   );
 }
