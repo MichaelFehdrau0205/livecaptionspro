@@ -14,6 +14,8 @@ export interface CaptionLine {
   words: CaptionWord[];
   isFinalized: boolean;
   gapFillerApplied: boolean;
+  /** Optional; when absent, UI alternates speaker by line index for color boxes. */
+  speakerId?: number;
 }
 
 export interface SessionStats {

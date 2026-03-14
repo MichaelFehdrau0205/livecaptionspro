@@ -1,12 +1,18 @@
 import { v4 as uuidv4 } from 'uuid';
 import { addEndPunctuation } from '@/lib/punctuation';
+import { segmentWords } from '@/lib/segmentWords';
+import { MAX_CAPTION_LINES } from '@/lib/constants';
 import type { SessionState, CaptionLine, CaptionWord, SessionStatus, FeedbackGiven } from '@/types';
+
+function capCaptions(lines: CaptionLine[]): CaptionLine[] {
+  return lines.length <= MAX_CAPTION_LINES ? lines : lines.slice(-MAX_CAPTION_LINES);
+}
 
 export type SessionAction =
   | { type: 'START_SESSION' }
   | { type: 'ADD_INTERIM'; payload: string }
   | { type: 'FINALIZE_LINE'; payload: string }
-  | { type: 'FINALIZE_LINE_WITH_WORDS'; payload: { words: CaptionWord[] } }
+  | { type: 'FINALIZE_LINE_WITH_WORDS'; payload: { words: CaptionWord[]; speakerId?: number } }
   | { type: 'APPLY_GAP_FILLER'; payload: { lineId: string; words: CaptionWord[] } }
   | { type: 'FLAG_WORD'; payload: { lineId: string; wordIndex: number } }
   | { type: 'END_SESSION' }
@@ -44,13 +50,16 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
 
     case 'ADD_INTERIM': {
       const raw = String(action.payload ?? '').trim();
-      return { ...state, currentInterim: raw ? addEndPunctuation(raw) : '' };
+      if (!raw) return { ...state, currentInterim: '' };
+      const withSpaces = segmentWords(raw);
+      return { ...state, currentInterim: addEndPunctuation(withSpaces) };
     }
 
     case 'FINALIZE_LINE': {
       const raw = String(action.payload ?? '').trim();
       if (!raw) return { ...state, currentInterim: '' };
-      const text = addEndPunctuation(raw);
+      const withSpaces = segmentWords(raw);
+      const text = addEndPunctuation(withSpaces);
       const words = sentenceToWords(text);
       const newLine: CaptionLine = {
         id: uuidv4(),
@@ -58,9 +67,10 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
         isFinalized: true,
         gapFillerApplied: false,
       };
+      const nextCaptions = capCaptions([...state.captions, newLine]);
       return {
         ...state,
-        captions: [...state.captions, newLine],
+        captions: nextCaptions,
         currentInterim: '',
         stats: {
           ...state.stats,
@@ -70,17 +80,19 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
     }
 
     case 'FINALIZE_LINE_WITH_WORDS': {
-      const { words } = action.payload;
+      const { words, speakerId } = action.payload;
       if (!words.length) return { ...state, currentInterim: '' };
       const newLine: CaptionLine = {
         id: uuidv4(),
         words,
         isFinalized: true,
         gapFillerApplied: false,
+        ...(speakerId != null && speakerId >= 1 && speakerId <= 4 ? { speakerId } : {}),
       };
+      const nextCaptions = capCaptions([...state.captions, newLine]);
       return {
         ...state,
-        captions: [...state.captions, newLine],
+        captions: nextCaptions,
         currentInterim: '',
         stats: {
           ...state.stats,

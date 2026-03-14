@@ -19,3 +19,10 @@ export const GAP_FILLER_CONTEXT_SIZE = 5;
 
 // FIFO caption stage (Week 2 multi-speaker)
 export const MAX_LINES = 8;
+
+// Cap in-session caption lines so state doesn't grow unbounded (reduces remount/chop risk)
+export const MAX_CAPTION_LINES = 150;
+
+// Display mode: lecture (one style, flowing) vs group (color boxes per speaker)
+export const DISPLAY_MODE_KEY = 'livecaptionspro_display_mode';
+export type DisplayMode = 'lecture' | 'group';

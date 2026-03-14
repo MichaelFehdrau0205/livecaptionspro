@@ -8,7 +8,8 @@ export type DeepgramStatus = 'idle' | 'connecting' | 'listening' | 'error';
 
 export interface DeepgramCallbacks {
   onInterim: (text: string) => void;
-  onFinalWords: (words: CaptionWord[]) => void;
+  /** words + optional speakerId (1–4) from diarization; when different voice detected, Deepgram sends a different speaker. */
+  onFinalWords: (words: CaptionWord[], speakerId?: number) => void;
   onError?: (err: string) => void;
 }
 
@@ -20,6 +21,8 @@ interface DeepgramWord {
   end: number;
   confidence: number;
   punctuated_word?: string;
+  /** Present when diarize=true (streaming: speaker only, no speaker_confidence). */
+  speaker?: number;
 }
 
 interface DeepgramResponse {
@@ -50,6 +53,26 @@ function mapWord(dg: DeepgramWord): CaptionWord {
   else if (conf >= CONFIDENCE_MEDIUM) type = 'uncertain';
   else type = 'predicted';
   return { text: dg.punctuated_word ?? dg.word, type, confidence: conf, flagged: false };
+}
+
+/** Majority speaker in segment (0-based from Deepgram). Returns 1–4 for UI (speaker 1 = white/no box, 2–4 = colored). */
+function speakerFromWords(dgWords: DeepgramWord[]): number | undefined {
+  if (!dgWords.length) return undefined;
+  const counts: Record<number, number> = {};
+  for (const w of dgWords) {
+    const s = w.speaker ?? 0;
+    counts[s] = (counts[s] ?? 0) + 1;
+  }
+  let best = 0;
+  let maxCount = 0;
+  for (const [s, c] of Object.entries(counts)) {
+    const n = Number(s);
+    if (c > maxCount) {
+      maxCount = c;
+      best = n;
+    }
+  }
+  return Math.min(best + 1, 4);
 }
 
 export function useDeepgram(callbacks: DeepgramCallbacks) {
@@ -121,6 +144,7 @@ export function useDeepgram(callbacks: DeepgramCallbacks) {
       punctuate: 'true',
       smart_format: 'true',
       language: 'en-US',
+      diarize: 'true', // different voice → different speaker → color change in Group mode
     });
 
     const ws = new WebSocket(
@@ -170,8 +194,10 @@ export function useDeepgram(callbacks: DeepgramCallbacks) {
         if (!transcript) return;
 
         if (data.is_final) {
-          const words = (alt.words ?? []).map(mapWord);
-          if (words.length > 0) callbacksRef.current.onFinalWords(words);
+          const dgWords = alt.words ?? [];
+          const words = dgWords.map(mapWord);
+          const speakerId = speakerFromWords(dgWords);
+          if (words.length > 0) callbacksRef.current.onFinalWords(words, speakerId);
         } else {
           callbacksRef.current.onInterim(transcript);
         }
