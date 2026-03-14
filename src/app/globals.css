@@ -39,11 +39,15 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
-/* Prevent overscroll bounce on iOS */
-html,
+/* Prevent overscroll bounce on iOS; full height chain for Safari + Chrome */
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+}
 body {
   overscroll-behavior: none;
   height: 100%;
+  min-height: 100%;
 }
 
 /* Safe area support */
@@ -57,12 +61,41 @@ body {
   touch-action: manipulation;
 }
 
-/* Start screen and modals: fit viewport with safe area insets */
+/* Start screen: full viewport height — 100vh first for Safari, then dvh */
 .start-screen-fit {
-  min-height: 100dvh;
   min-height: 100vh;
+  height: 100vh;
   padding-top: max(1.5rem, env(safe-area-inset-top));
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+@supports (height: 100dvh) {
+  .start-screen-fit {
+    min-height: 100dvh;
+    height: 100dvh;
+  }
+}
+
+/* Hide static fallback once app has mounted (Safari + all browsers) */
+body.app-mounted .app-loading-fallback {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Start screen card: center in viewport — Safari + Chrome */
+.start-screen-card-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -webkit-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  width: 100%;
+  max-width: 28rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  box-sizing: border-box;
+  z-index: 2;
 }
 
 .mic-prompt-overlay-fit {

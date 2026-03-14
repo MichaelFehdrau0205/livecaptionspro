@@ -30,9 +30,9 @@ describe('StartScreen', () => {
     startSessionMock.mockClear();
   });
 
-  it('renders the app title', () => {
+  it('renders the app title', async () => {
     render(<StartScreen />);
-    expect(screen.getByText('Live Captions Pro')).toBeInTheDocument();
+    expect(await screen.findByText('Live Captions Pro')).toBeInTheDocument();
   });
 
   it('renders the start button', async () => {
@@ -41,9 +41,9 @@ describe('StartScreen', () => {
     expect(screen.getByText('START CAPTIONING')).toBeInTheDocument();
   });
 
-  it('renders education mode label', () => {
+  it('renders education mode label', async () => {
     render(<StartScreen />);
-    expect(screen.getByText(/education mode/i)).toBeInTheDocument();
+    expect(await screen.findByText(/education mode/i)).toBeInTheDocument();
   });
 
   it('shows mic permission prompt when start is clicked', async () => {
@@ -77,4 +77,6 @@ describe('StartScreen', () => {
     const btn = await screen.findByTestId('start-button');
     expect(btn).toHaveClass('min-h-[56px]');
   });
+
 });
+

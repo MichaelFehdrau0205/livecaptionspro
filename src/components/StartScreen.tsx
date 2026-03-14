@@ -4,30 +4,52 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useSession } from '@/context/SessionContext';
 import { ApiKeySettings } from './ApiKeySettings';
 
+/** Renders only after mount to avoid hydration mismatch (navigator/window differ on server). */
 function IOSTip() {
-  const [show] = useState(() => {
-    if (typeof navigator === 'undefined') return false;
+  const [show, setShow] = useState(false);
+  useEffect(() => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     let isStandalone = false;
     try {
-      if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      if (typeof window.matchMedia === 'function') {
         isStandalone = window.matchMedia('(display-mode: standalone)').matches;
       }
       if (!isStandalone && (navigator as { standalone?: boolean }).standalone === true) isStandalone = true;
     } catch {
       // ignore
     }
-    return isIOS || isStandalone;
-  });
+    setShow(isIOS || isStandalone);
+  }, []);
   if (!show) return null;
   return (
-    <p className="text-xs text-white/50 text-center max-w-[280px]">
+    <p className="text-xs text-white/60 text-center max-w-[280px]">
       On iPhone: open this page in <strong>Safari (browser tab)</strong>, not from Home Screen, for speech recognition.
     </p>
   );
 }
 
+/** Same root on server and client so hydration matches; content only after mount. */
+const START_ROOT_CLASS = 'start-screen-fit bg-[#0f0f1a] min-h-screen';
+
 export function StartScreen() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  return (
+    <div
+      className={START_ROOT_CLASS}
+      style={{ minHeight: '100vh', height: '100vh' }}
+      data-tap-targets
+      suppressHydrationWarning
+    >
+      {mounted ? <StartScreenContent /> : null}
+    </div>
+  );
+}
+
+function StartScreenContent() {
   const { startSession, audioError } = useSession();
   const [showPrePrompt, setShowPrePrompt] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -40,7 +62,6 @@ export function StartScreen() {
     setShowPrePrompt(true);
   }, []);
 
-  // Safari often ignores React's onClick/onTouchEnd. Use native DOM listeners so both Chrome and Safari get the tap.
   const runOpenModal = useCallback(() => {
     const now = Date.now();
     if (now - lastActivationRef.current < 500) return;
@@ -89,15 +110,14 @@ export function StartScreen() {
 
   return (
     <div
-      className="start-screen-fit flex flex-col items-center justify-center bg-[#1a1a2e] px-6 py-6 text-white relative overflow-y-auto"
+      className="start-screen-fit flex flex-col items-center justify-center bg-[#0f0f1a] px-6 py-6 text-white relative overflow-y-auto"
+      style={{ minHeight: '100vh', height: '100vh' }}
       data-tap-targets
-      suppressHydrationWarning
     >
-      {/* Gear icon — top-right corner */}
       <button
         type="button"
         onClick={() => setShowSettings(true)}
-        className="absolute top-4 right-4 p-2 text-white/40 hover:text-white/80 transition-colors"
+        className="absolute top-4 right-4 z-10 p-2 text-white/60 transition-colors hover:text-white"
         aria-label="Open settings"
         data-testid="settings-button"
       >
@@ -109,10 +129,20 @@ export function StartScreen() {
 
       {showSettings && <ApiKeySettings onClose={() => setShowSettings(false)} />}
 
-      <div className="flex flex-col items-center gap-6 max-w-sm w-full flex-1 justify-center">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight">Live Captions Pro</h1>
-          <p className="mt-3 text-lg text-white/70 leading-relaxed">
+      <div
+        className="start-screen-card-wrapper flex flex-col items-center justify-center gap-6 rounded-2xl border border-white/10 px-6 py-8 shadow-xl"
+        style={{
+          backgroundColor: 'rgba(26, 26, 46, 0.95)',
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          WebkitTransform: 'translate(-50%, -50%)',
+        }}
+      >
+        <div className="text-center flex-shrink-0">
+          <h1 className="text-3xl font-bold tracking-tight text-white">Live Captions Pro</h1>
+          <p className="mt-3 text-lg text-white/90 leading-relaxed">
             Real-time captions with zero lost meaning.
           </p>
         </div>
@@ -122,14 +152,21 @@ export function StartScreen() {
           type="button"
           data-testid="start-button"
           className="w-full py-5 rounded-2xl bg-white text-[#1a1a2e] text-xl font-bold tracking-wide
-            hover:bg-white/90 active:scale-95 transition-all min-h-[56px] touch-manipulation cursor-pointer"
+            hover:bg-white/90 active:scale-95 transition-all min-h-[56px] touch-manipulation cursor-pointer flex-shrink-0 relative z-10"
           aria-label="Start captioning session"
-          suppressHydrationWarning
+          onClick={(e) => {
+            e.preventDefault();
+            runOpenModal();
+          }}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            runOpenModal();
+          }}
         >
           START CAPTIONING
         </button>
 
-        <span className="text-sm text-white/50 tracking-widest uppercase">Education Mode</span>
+        <span className="text-sm text-white/70 tracking-widest uppercase flex-shrink-0">Education Mode</span>
 
         <IOSTip />
       </div>

@@ -9,9 +9,10 @@ interface CaptionAreaProps {
   captions: CaptionLineType[];
   currentInterim: string;
   onFlagWord: (lineId: string, wordIndex: number) => void;
+  showSpeakerColors?: boolean;
 }
 
-export function CaptionArea({ captions, currentInterim, onFlagWord }: CaptionAreaProps) {
+export function CaptionArea({ captions, currentInterim, onFlagWord, showSpeakerColors = false }: CaptionAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to latest caption
@@ -32,7 +33,7 @@ export function CaptionArea({ captions, currentInterim, onFlagWord }: CaptionAre
       <div className="max-w-[720px] mx-auto">
         {captions.map((line) => (
           <span key={line.id}>
-            <CaptionLine line={line} onFlagWord={onFlagWord} />
+            <CaptionLine line={line} onFlagWord={onFlagWord} showSpeakerColor={showSpeakerColors} />
           </span>
         ))}
 

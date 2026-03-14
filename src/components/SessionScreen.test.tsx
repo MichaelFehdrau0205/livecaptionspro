@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SessionScreen } from './SessionScreen';
 import type { CaptionLine as CaptionLineType } from '@/types';
@@ -14,6 +14,7 @@ function makeLine(id: string, words: CaptionLineType['words']): CaptionLineType 
 
 const dispatch = vi.fn();
 const endSession = vi.fn();
+const mockDisplayMode = vi.hoisted(() => ({ value: 'group' as 'lecture' | 'group' }));
 
 vi.mock('@/context/SessionContext', () => ({
   useSession: () => ({
@@ -33,12 +34,14 @@ vi.mock('@/context/SessionContext', () => ({
     dispatch,
     endSession,
     connectionStatus: 'connected' as const,
-    gapFillerPaused: false,
     timer: '00:00:05',
+    displayMode: mockDisplayMode.value,
+    setDisplayMode: vi.fn(),
     startSession: vi.fn(),
     giveFeedback: vi.fn(),
     audioError: null,
     speechError: null,
+    isDeepgramActive: true,
   }),
 }));
 
@@ -46,11 +49,18 @@ describe('SessionScreen', () => {
   beforeEach(() => {
     dispatch.mockClear();
     endSession.mockClear();
+    mockDisplayMode.value = 'group';
   });
 
   it('renders status bar', () => {
     render(<SessionScreen />);
     expect(screen.getByTestId('status-bar')).toBeInTheDocument();
+  });
+
+  it('renders Lecture/Group toggle on listening page', () => {
+    render(<SessionScreen />);
+    expect(screen.getByTestId('mode-lecture')).toBeInTheDocument();
+    expect(screen.getByTestId('mode-group')).toBeInTheDocument();
   });
 
   it('renders caption area', () => {
