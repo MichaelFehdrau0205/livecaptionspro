@@ -51,7 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="bg-[#1a1a2e] text-white antialiased">
         <a href="#main-content" className="skip-link">Skip to main content</a>
-        <main id="main-content" className="min-h-screen">{children}</main>
+        <main id="main-content" className="min-h-screen h-full">{children}</main>
       </body>
     </html>
   );

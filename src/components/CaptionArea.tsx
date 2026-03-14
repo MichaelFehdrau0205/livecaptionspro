@@ -3,15 +3,17 @@
 import { useEffect, useRef } from 'react';
 import { CaptionLine } from './CaptionLine';
 import type { CaptionLine as CaptionLineType } from '@/types';
+import type { DisplayMode } from '@/lib/constants';
 import { addEndPunctuation } from '@/lib/punctuation';
 
 interface CaptionAreaProps {
   captions: CaptionLineType[];
   currentInterim: string;
   onFlagWord: (lineId: string, wordIndex: number) => void;
+  displayMode: DisplayMode;
 }
 
-export function CaptionArea({ captions, currentInterim, onFlagWord }: CaptionAreaProps) {
+export function CaptionArea({ captions, currentInterim, onFlagWord, displayMode }: CaptionAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to latest caption
@@ -24,25 +26,35 @@ export function CaptionArea({ captions, currentInterim, onFlagWord }: CaptionAre
 
   return (
     <div
-      className="flex-1 overflow-y-auto px-4 py-6 text-[20px] leading-relaxed md:text-[18px] lg:text-[22px]"
+      className="caption-area flex-1 overflow-y-auto px-4 py-6 text-[24px] leading-relaxed md:text-[22px] lg:text-[24px]"
       aria-live="polite"
       aria-atomic="false"
       data-testid="caption-area"
     >
-      <div className="max-w-[720px] mx-auto">
-        {captions.map((line) => (
-          <span key={line.id}>
-            <CaptionLine line={line} onFlagWord={onFlagWord} />
-          </span>
+      <div className="max-w-[720px] mx-auto leading-relaxed">
+        {captions.map((line, index) => (
+          <CaptionLine
+            key={line.id}
+            line={line}
+            lineIndex={index}
+            onFlagWord={onFlagWord}
+            tokenSizeClass="text-[24px]"
+            displayMode={displayMode}
+          />
         ))}
 
-        {/* Interim text — add punctuation so iOS (which may rarely send final results) still shows ? ! . */}
+        {/* Interim: same weight as final (no italic) so it doesn't feel like a second delay before "normal" text. */}
         {currentInterim && (
-          <span className="text-white/70 italic" data-testid="interim-text">{addEndPunctuation(currentInterim)}</span>
+          <>
+            <span className="text-white/95 font-medium" data-testid="interim-text">{addEndPunctuation(currentInterim)}</span>
+            <span className="inline-block w-0.5 h-5 bg-white/80 animate-pulse ml-0.5 align-middle" aria-hidden="true" data-testid="interim-cursor" />
+          </>
         )}
 
-        {/* Subtle blinking cursor at end of live text */}
-        <span className="inline-block w-0.5 h-5 bg-white/60 animate-pulse ml-1 align-middle" aria-hidden="true" data-testid="caption-cursor" />
+        {/* Cursor when no interim (shows end of final text) */}
+        {!currentInterim && (
+          <span className="inline-block w-0.5 h-5 bg-white/60 animate-pulse ml-1 align-middle" aria-hidden="true" data-testid="caption-cursor" />
+        )}
 
         <div ref={bottomRef} data-testid="caption-area-bottom" aria-hidden="true" />
       </div>

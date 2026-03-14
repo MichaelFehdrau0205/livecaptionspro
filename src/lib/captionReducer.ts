@@ -1,6 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
 import { addEndPunctuation } from '@/lib/punctuation';
+import { segmentWords } from '@/lib/segmentWords';
+import { MAX_CAPTION_LINES } from '@/lib/constants';
 import type { SessionState, CaptionLine, CaptionWord, SessionStatus, FeedbackGiven } from '@/types';
+
+function capCaptions(lines: CaptionLine[]): CaptionLine[] {
+  return lines.length <= MAX_CAPTION_LINES ? lines : lines.slice(-MAX_CAPTION_LINES);
+}
 
 export type SessionAction =
   | { type: 'START_SESSION' }
@@ -44,13 +50,16 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
 
     case 'ADD_INTERIM': {
       const raw = String(action.payload ?? '').trim();
-      return { ...state, currentInterim: raw ? addEndPunctuation(raw) : '' };
+      if (!raw) return { ...state, currentInterim: '' };
+      const withSpaces = segmentWords(raw);
+      return { ...state, currentInterim: addEndPunctuation(withSpaces) };
     }
 
     case 'FINALIZE_LINE': {
       const raw = String(action.payload ?? '').trim();
       if (!raw) return { ...state, currentInterim: '' };
-      const text = addEndPunctuation(raw);
+      const withSpaces = segmentWords(raw);
+      const text = addEndPunctuation(withSpaces);
       const words = sentenceToWords(text);
       const newLine: CaptionLine = {
         id: uuidv4(),
@@ -58,9 +67,10 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
         isFinalized: true,
         gapFillerApplied: false,
       };
+      const nextCaptions = capCaptions([...state.captions, newLine]);
       return {
         ...state,
-        captions: [...state.captions, newLine],
+        captions: nextCaptions,
         currentInterim: '',
         stats: {
           ...state.stats,
@@ -79,9 +89,10 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
         gapFillerApplied: false,
         speakerId,
       };
+      const nextCaptions = capCaptions([...state.captions, newLine]);
       return {
         ...state,
-        captions: [...state.captions, newLine],
+        captions: nextCaptions,
         currentInterim: '',
         stats: {
           ...state.stats,

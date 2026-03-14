@@ -20,6 +20,7 @@ interface DeepgramWord {
   end: number;
   confidence: number;
   punctuated_word?: string;
+  /** Present when diarize=true (streaming: speaker only, no speaker_confidence). */
   speaker?: number;
 }
 
@@ -138,7 +139,7 @@ export function useDeepgram(callbacks: DeepgramCallbacks) {
       punctuate: 'true',
       smart_format: 'true',
       language: 'en-US',
-      diarize: 'true',
+      diarize: 'true', // different voice → different speaker → color change in Group mode
     });
 
     const ws = new WebSocket(

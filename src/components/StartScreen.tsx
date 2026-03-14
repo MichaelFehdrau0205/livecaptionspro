@@ -89,60 +89,63 @@ export function StartScreen() {
 
   return (
     <div
-      className="start-screen-fit flex flex-col items-center justify-center bg-[#1a1a2e] px-6 py-6 text-white relative overflow-y-auto"
+      className="start-screen-fit flex flex-col min-h-screen bg-[#1a1a2e] text-white overflow-y-auto"
       data-tap-targets
       suppressHydrationWarning
     >
-      {/* Gear icon — top-right corner */}
-      <button
-        type="button"
-        onClick={() => setShowSettings(true)}
-        className="absolute top-4 right-4 p-2 text-white/40 hover:text-white/80 transition-colors"
-        aria-label="Open settings"
-        data-testid="settings-button"
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-        </svg>
-      </button>
+      {/* Header bar: gear only, in normal flow so it never overlaps title */}
+      <header className="flex-shrink-0 flex items-center justify-end h-14 px-4">
+        <button
+          type="button"
+          onClick={() => setShowSettings(true)}
+          className="p-2 text-white/40 hover:text-white/80 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          aria-label="Open settings"
+          data-testid="settings-button"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+        </button>
+      </header>
 
       {showSettings && <ApiKeySettings onClose={() => setShowSettings(false)} />}
 
-      <div className="flex flex-col items-center gap-6 max-w-sm w-full flex-1 justify-center">
-        <div className="text-center">
+      {/* Main content: min-height from .start-screen-content in CSS so server/client always match (no hydration mismatch). */}
+      <div className="flex-1 start-screen-content flex flex-col items-center justify-center px-6 pb-6 pt-4">
+        <div className="flex flex-col items-center gap-6 max-w-sm w-full text-center">
           <h1 className="text-3xl font-bold tracking-tight">Live Captions Pro</h1>
-          <p className="mt-3 text-lg text-white/70 leading-relaxed">
+          <p className="text-lg text-white/70 leading-relaxed">
             Real-time captions with zero lost meaning.
           </p>
+
+          <button
+            ref={startButtonRef}
+            type="button"
+            data-testid="start-button"
+            className="w-full py-5 rounded-2xl bg-white text-[#1a1a2e] text-xl font-bold tracking-wide
+              hover:bg-white/90 active:scale-95 transition-all min-h-[56px] touch-manipulation cursor-pointer"
+            aria-label="Start captioning session"
+            suppressHydrationWarning
+          >
+            START CAPTIONING
+          </button>
+
+          <span className="text-sm text-white/50 tracking-widest uppercase">Education Mode</span>
+
+          <IOSTip />
         </div>
-
-        <button
-          ref={startButtonRef}
-          type="button"
-          data-testid="start-button"
-          className="w-full py-5 rounded-2xl bg-white text-[#1a1a2e] text-xl font-bold tracking-wide
-            hover:bg-white/90 active:scale-95 transition-all min-h-[56px] touch-manipulation cursor-pointer"
-          aria-label="Start captioning session"
-          suppressHydrationWarning
-        >
-          START CAPTIONING
-        </button>
-
-        <span className="text-sm text-white/50 tracking-widest uppercase">Education Mode</span>
-
-        <IOSTip />
       </div>
 
       {showPrePrompt && (
         <div
-          className="mic-prompt-overlay-fit fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4 overflow-y-auto"
+          className="mic-prompt-overlay-fit fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/70 p-4 overflow-y-auto min-h-screen"
           role="dialog"
           aria-modal="true"
           aria-labelledby="mic-prompt-title"
           data-testid="mic-permission-prompt"
         >
-          <div className="bg-[#1a1a2e] rounded-2xl p-6 max-w-sm w-full border border-white/10 shadow-xl my-auto" data-tap-targets>
+          <div className="bg-[#1a1a2e] rounded-2xl p-6 max-w-sm w-full border border-white/10 shadow-xl mt-6" data-tap-targets>
             <h2 id="mic-prompt-title" className="text-xl font-bold text-white mb-3">
               Microphone access
             </h2>
