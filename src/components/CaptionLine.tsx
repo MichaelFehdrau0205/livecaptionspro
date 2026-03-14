@@ -23,50 +23,56 @@ function stableRandomSpeakerId(lineId: string): number {
   return (h % 4) + 1;
 }
 
+function wordConfidenceColor(type: string, flagged: boolean): string {
+  if (flagged) return 'text-white border-b-2 border-red-500';
+  if (type === 'predicted') return 'text-white bg-blue-500/25 underline decoration-blue-400';
+  if (type === 'uncertain') return 'text-amber-400';
+  return 'text-white';
+}
+
 export function CaptionLine({ line, lineIndex, onFlagWord, tokenSizeClass, displayMode = 'group' }: CaptionLineProps) {
   const speakerId = line.speakerId ?? stableRandomSpeakerId(line.id);
   const speaker = getSpeakerProfile(speakerId);
   const sentence = line.words.map((w) => (w.text ?? '').trim()).filter(Boolean).join(' ');
-  const hasFlagged = line.words.some((w) => w.flagged);
   const isLecture = displayMode === 'lecture';
-
-  const textColor = isLecture ? '#ffffff' : speaker.textColor;
   const blockBg = isLecture ? undefined : (speaker.id === 1 ? undefined : speaker.bgColor);
 
-  /* LOCK: No vertical colored line (no borderLeft). User requested many times: use colored blocks only, never a bar before the sentence. */
-  const wrapperStyle = { ['--line-color' as string]: textColor, ['--line-bg' as string]: blockBg };
-  const innerStyle = {
-    color: 'var(--line-color)',
-    ...(blockBg ? { backgroundColor: blockBg, padding: '0.2rem 0.45rem' } : {}),
-  };
+  // Group mode — each line is block-level, clearly attributed to one speaker
+  if (!isLecture) {
+    const textColor = speaker.id === 1 ? '#ffffff' : speaker.textColor;
+    return (
+      <div className="mb-3" data-testid="caption-line">
+        <span
+          className={`caption-line-text ${tokenSizeClass ?? 'text-[24px]'} ${blockBg ? 'font-semibold rounded-lg px-2 py-0.5' : ''}`}
+          style={{ color: textColor, ...(blockBg ? { backgroundColor: blockBg } : {}) }}
+          onClick={() => onFlagWord(line.id, 0)}
+          role="button"
+          aria-label={`${sentence} — tap to flag as misheard`}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onFlagWord(line.id, 0); } }}
+          tabIndex={0}
+        >
+          {sentence}
+        </span>
+      </div>
+    );
+  }
 
-  /* Color box: small gap to next (box next to box). White text: 2 spaces after; 2 spaces before only when not first. */
-  const spacingClass = blockBg
-    ? 'mr-2'
-    : `mr-[2em] ${lineIndex > 0 ? 'ml-[2em]' : ''}`;
-
+  // Lecture mode — block per line, per-word confidence colors
   return (
-    <span
-      className={`inline-block mb-2 align-baseline ${spacingClass}`}
-      data-testid="caption-line"
-      style={wrapperStyle}
-    >
-      <span
-        className={`caption-line-text inline ${hasFlagged ? 'border-b-2 border-red-500' : ''} ${tokenSizeClass ?? 'text-[24px]'} ${blockBg ? 'font-semibold' : ''}`}
-        style={innerStyle}
-        onClick={() => onFlagWord(line.id, 0)}
-        role="button"
-        aria-label={`${sentence} — tap to flag as misheard`}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onFlagWord(line.id, 0);
-          }
-        }}
-        tabIndex={0}
-      >
-        {sentence}
-      </span>
-    </span>
+    <div className="mb-3" data-testid="caption-line">
+      {line.words.map((word, i) => (
+        <span
+          key={i}
+          className={`${tokenSizeClass ?? 'text-[24px]'} ${wordConfidenceColor(word.type, word.flagged)}`}
+          onClick={() => onFlagWord(line.id, i)}
+          role="button"
+          aria-label={`${word.text} — tap to flag`}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onFlagWord(line.id, i); } }}
+          tabIndex={0}
+        >
+          {word.text}{' '}
+        </span>
+      ))}
+    </div>
   );
 }
