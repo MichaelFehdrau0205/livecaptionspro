@@ -57,9 +57,9 @@ export function CaptionLine({ line, lineIndex, onFlagWord, tokenSizeClass, displ
     );
   }
 
-  // Lecture mode — block per line, per-word confidence colors
+  // Lecture mode — inline flowing text with per-word confidence colors
   return (
-    <div className="mb-3" data-testid="caption-line">
+    <span data-testid="caption-line">
       {line.words.map((word, i) => (
         <span
           key={i}
@@ -73,6 +73,6 @@ export function CaptionLine({ line, lineIndex, onFlagWord, tokenSizeClass, displ
           {word.text}{' '}
         </span>
       ))}
-    </div>
+    </span>
   );
 }
