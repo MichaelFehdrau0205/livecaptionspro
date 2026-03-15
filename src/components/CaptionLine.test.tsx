@@ -13,55 +13,37 @@ function makeLine(words: CaptionLineType['words']): CaptionLineType {
 }
 
 describe('CaptionLine', () => {
-  it('renders confirmed words in default style', () => {
+  it('renders sentence with caption line', () => {
     const line = makeLine([{ text: 'hello', type: 'confirmed', confidence: 1.0, flagged: false }]);
-    render(<CaptionLine line={line} onFlagWord={vi.fn()} />);
-    const word = screen.getByText(/hello/);
-    expect(word).toBeInTheDocument();
-    expect(word.className).toContain('text-white');
-    expect(word.className).not.toContain('amber');
-    expect(word.className).not.toContain('blue');
+    render(<CaptionLine line={line} lineIndex={0} onFlagWord={vi.fn()} />);
+    expect(screen.getByText(/hello/)).toBeInTheDocument();
+    expect(screen.getByTestId('caption-line')).toBeInTheDocument();
   });
 
-  it('renders predicted words with highlight background', () => {
-    const line = makeLine([{ text: 'executive', type: 'predicted', confidence: 0.5, flagged: false }]);
-    render(<CaptionLine line={line} onFlagWord={vi.fn()} />);
-    const word = screen.getByTestId('word-predicted');
-    expect(word.className).toContain('blue');
-    expect(word.className).toContain('underline');
-  });
-
-  it('renders uncertain words in orange', () => {
-    const line = makeLine([{ text: 'branch', type: 'uncertain', confidence: 0.75, flagged: false }]);
-    render(<CaptionLine line={line} onFlagWord={vi.fn()} />);
-    const word = screen.getByTestId('word-uncertain');
-    expect(word.className).toContain('amber');
-  });
-
-  it('calls onFlagWord when a word is tapped', () => {
+  it('calls onFlagWord when line is tapped', () => {
     const onFlagWord = vi.fn();
     const line = makeLine([{ text: 'hello', type: 'confirmed', confidence: 1.0, flagged: false }]);
-    render(<CaptionLine line={line} onFlagWord={onFlagWord} />);
+    render(<CaptionLine line={line} lineIndex={0} onFlagWord={onFlagWord} />);
     fireEvent.click(screen.getByText(/hello/));
     expect(onFlagWord).toHaveBeenCalledWith('test-line-1', 0);
   });
 
-  it('renders flagged words with red underline', () => {
+  it('renders flagged word with red underline in lecture mode', () => {
     const line = makeLine([{ text: 'hello', type: 'confirmed', confidence: 1.0, flagged: true }]);
-    render(<CaptionLine line={line} onFlagWord={vi.fn()} />);
-    const word = screen.getByText(/hello/);
-    expect(word.className).toContain('border-red');
+    const { container } = render(<CaptionLine line={line} lineIndex={0} onFlagWord={vi.fn()} displayMode="lecture" />);
+    expect(container.querySelector('.border-red-500')).toBeInTheDocument();
+    expect(screen.getByText(/hello/)).toBeInTheDocument();
   });
 
-  it('renders multiple words', () => {
+  it('renders all words in lecture mode', () => {
     const line = makeLine([
       { text: 'The', type: 'confirmed', confidence: 1.0, flagged: false },
       { text: 'executive', type: 'predicted', confidence: 0.5, flagged: false },
       { text: 'branch', type: 'uncertain', confidence: 0.8, flagged: false },
     ]);
-    render(<CaptionLine line={line} onFlagWord={vi.fn()} />);
+    render(<CaptionLine line={line} lineIndex={0} onFlagWord={vi.fn()} displayMode="lecture" />);
     expect(screen.getByText(/The/)).toBeInTheDocument();
-    expect(screen.getByTestId('word-predicted')).toBeInTheDocument();
-    expect(screen.getByTestId('word-uncertain')).toBeInTheDocument();
+    expect(screen.getByText(/executive/)).toBeInTheDocument();
+    expect(screen.getByText(/branch/)).toBeInTheDocument();
   });
 });

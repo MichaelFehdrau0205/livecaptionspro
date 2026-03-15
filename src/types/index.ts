@@ -14,6 +14,7 @@ export interface CaptionLine {
   words: CaptionWord[];
   isFinalized: boolean;
   gapFillerApplied: boolean;
+  /** Optional; 0-based speaker index from Deepgram diarization. When absent, UI alternates by line index for color boxes. */
   speakerId?: number;
 }
 

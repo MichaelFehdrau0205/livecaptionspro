@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useReducer,
   useRef,
   useState,
@@ -40,6 +41,7 @@ interface SessionContextValue {
   dispatch: React.Dispatch<SessionAction>;
   startSession: () => Promise<void>;
   endSession: () => void;
+  restartSession: () => Promise<void>;
   isDeepgramActive: boolean;
   giveFeedback: (choice: 'yes' | 'no') => void;
   setOverrideNextSpeaker: (speakerId: number) => void;
@@ -56,7 +58,7 @@ interface SessionContextValue {
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 const SESSION_STORAGE_KEY = 'livecaptionspro_active';
-const SESSION_STALE_MS = 60000; // 1 min
+const SESSION_STALE_MS = 30 * 60 * 1000; // 30 min — avoid treating active sessions as stale on remount (e.g. after 2 min)
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(captionReducer, initialState);
@@ -71,11 +73,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => document.body.classList.remove('app-mounted');
   }, []);
 
-  // Persist "session active" so a refresh/HMR doesn't drop user back to Start
+  // Restore: read sessionStorage first (useLayoutEffect so it runs before any useEffect that might touch storage).
+  useLayoutEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (!raw) return;
+      const { at } = JSON.parse(raw);
+      if (Date.now() - at > SESSION_STALE_MS) {
+        sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        return;
+      }
+      needsRestoreRef.current = true;
+    } catch { /* ignore */ }
+  }, []);
+
+  // Persist "session active" so a refresh/HMR doesn't drop user back to Start.
+  // Only clear on 'ended' — do NOT clear on 'idle', or a remount would wipe storage before restore can read it.
   useEffect(() => {
     if (state.status === 'listening') {
       sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ at: Date.now() }));
-    } else if (state.status === 'ended' || state.status === 'idle') {
+    } else if (state.status === 'ended') {
       sessionStorage.removeItem(SESSION_STORAGE_KEY);
     }
   }, [state.status]);
@@ -112,27 +129,44 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const { start: startAudio, stop: stopAudio, error: audioError } = useAudioPipeline();
 
   const [speechError, setSpeechError] = useState<string | null>(null);
+  const lastSpeechErrorRef = useRef<string | null>(null);
+
   const handleSpeechError = useCallback((err: string | undefined) => {
     const raw = err && String(err).trim();
+    if (raw === 'aborted') return;
     const message =
       !raw ? 'Speech recognition unavailable.'
       : raw === 'not-allowed' ? 'Speech recognition not allowed (mic permission or denied).'
       : raw === 'no-speech' ? 'Speech recognition heard no speech.'
       : raw === 'audio-capture' ? 'Speech recognition could not capture audio.'
       : raw === 'network' ? 'Speech recognition failed (network).'
-      : raw === 'aborted' ? 'Speech recognition was aborted.'
       : raw === 'language-not-supported' ? 'Speech recognition language not supported.'
       : raw;
+    lastSpeechErrorRef.current = raw ?? null;
     setSpeechError(message);
   }, []);
+
+  const clearSpeechErrorOnSuccess = useCallback(() => {
+    setSpeechError((prev) => (prev ? null : prev));
+  }, []);
+
   const { start: startSTT, stop: stopSTT } = useSpeechRecognition({
-    onInterim: (text) => dispatch({ type: 'ADD_INTERIM', payload: text }),
-    onFinal: (text) => dispatch({ type: 'FINALIZE_LINE', payload: addEndPunctuation(String(text ?? '').trim()) }),
+    onInterim: (text) => {
+      clearSpeechErrorOnSuccess();
+      dispatch({ type: 'ADD_INTERIM', payload: text });
+    },
+    onFinal: (text) => {
+      clearSpeechErrorOnSuccess();
+      dispatch({ type: 'FINALIZE_LINE', payload: addEndPunctuation(String(text ?? '').trim()) });
+    },
     onError: handleSpeechError,
   });
 
   const { start: startDG, stop: stopDG } = useDeepgram({
-    onInterim: (text) => dispatch({ type: 'ADD_INTERIM', payload: text }),
+    onInterim: (text) => {
+      clearSpeechErrorOnSuccess();
+      dispatch({ type: 'ADD_INTERIM', payload: text });
+    },
     onFinalWords: (words, diarizationSpeakerId) => {
       const speakerId = overrideNextSpeakerRef.current ?? diarizationSpeakerId;
       if (overrideNextSpeakerRef.current != null) overrideNextSpeakerRef.current = null;
@@ -140,6 +174,28 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     },
     onError: handleSpeechError,
   });
+
+  // Auto-retry speech once on transient errors so it can recover without user action
+  const speechRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!speechError || state.status !== 'listening') return;
+    if (lastSpeechErrorRef.current === 'not-allowed') return;
+    if (speechRetryTimeoutRef.current) return;
+    speechRetryTimeoutRef.current = setTimeout(() => {
+      speechRetryTimeoutRef.current = null;
+      const dgKey = getDeepgramKey();
+      if (dgKey) {
+        stopDG();
+        setTimeout(() => startDG(dgKey), 400);
+      } else {
+        stopSTT();
+        setTimeout(() => startSTT(), 400);
+      }
+    }, 2000);
+    return () => {
+      if (speechRetryTimeoutRef.current) clearTimeout(speechRetryTimeoutRef.current);
+    };
+  }, [speechError, state.status, startSTT, stopSTT, startDG, stopDG]);
 
   const isListening = state.status === 'listening';
   useWakeLock(isListening);
@@ -183,19 +239,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [startAudio, startSTT, startDG]);
 
-  // Check sessionStorage after mount — restore active session if page was refreshed
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
-      if (!raw) return;
-      const { at } = JSON.parse(raw);
-      if (Date.now() - at > SESSION_STALE_MS) { sessionStorage.removeItem(SESSION_STORAGE_KEY); return; }
-      needsRestoreRef.current = true;
-    } catch { /* ignore */ }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Re-start audio/STT after session restore
+  // Re-start audio/STT after session restore (needsRestoreRef set by useLayoutEffect above)
   useEffect(() => {
     if (!needsRestoreRef.current) return;
     needsRestoreRef.current = false;
@@ -218,6 +262,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'END_SESSION' });
   }, [stopSTT, stopAudio, stopDG]);
 
+  // Clears captions and restarts transcription — used when switching display modes
+  const restartSession = useCallback(async () => {
+    if (state.status !== 'listening') return;
+    const dgKey = getDeepgramKey();
+    if (dgKey) {
+      stopDG();
+    } else {
+      stopSTT();
+      stopAudio();
+    }
+    submittedLineIds.current = new Set();
+    setSpeechError(null);
+    if (dgKey) {
+      dispatch({ type: 'START_SESSION' });
+      startDG(dgKey);
+    } else {
+      const stream = await startAudio();
+      if (!stream) return;
+      dispatch({ type: 'START_SESSION' });
+      startSTT();
+    }
+  }, [state.status, stopDG, stopSTT, stopAudio, startDG, startSTT, startAudio]);
+
   const giveFeedback = useCallback((choice: 'yes' | 'no') => {
     dispatch({ type: 'GIVE_FEEDBACK', payload: choice });
   }, []);
@@ -235,6 +302,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     dispatch,
     startSession,
     endSession,
+    restartSession,
     giveFeedback,
     setOverrideNextSpeaker,
     connectionStatus,

@@ -4,22 +4,21 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useSession } from '@/context/SessionContext';
 import { ApiKeySettings } from './ApiKeySettings';
 
-/** Renders only after mount to avoid hydration mismatch (navigator/window differ on server). */
 function IOSTip() {
-  const [show, setShow] = useState(false);
-  useEffect(() => {
+  const [show] = useState(() => {
+    if (typeof navigator === 'undefined') return false;
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     let isStandalone = false;
     try {
-      if (typeof window.matchMedia === 'function') {
+      if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
         isStandalone = window.matchMedia('(display-mode: standalone)').matches;
       }
       if (!isStandalone && (navigator as { standalone?: boolean }).standalone === true) isStandalone = true;
     } catch {
       // ignore
     }
-    setShow(isIOS || isStandalone);
-  }, []);
+    return isIOS || isStandalone;
+  });
   if (!show) return null;
   return (
     <p className="text-xs text-white/60 text-center max-w-[280px]">
@@ -28,28 +27,8 @@ function IOSTip() {
   );
 }
 
-/** Same root on server and client so hydration matches; content only after mount. */
-const START_ROOT_CLASS = 'start-screen-fit bg-[#0f0f1a] min-h-screen';
-
+// StartScreen is loaded with ssr:false in page.tsx so no hydration issues
 export function StartScreen() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  return (
-    <div
-      className={START_ROOT_CLASS}
-      style={{ minHeight: '100vh', height: '100vh' }}
-      data-tap-targets
-      suppressHydrationWarning
-    >
-      {mounted ? <StartScreenContent /> : null}
-    </div>
-  );
-}
-
-function StartScreenContent() {
   const { startSession, audioError } = useSession();
   const [showPrePrompt, setShowPrePrompt] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -110,76 +89,61 @@ function StartScreenContent() {
 
   return (
     <div
-      className="start-screen-fit flex flex-col items-center justify-center bg-[#0f0f1a] px-6 py-6 text-white relative overflow-y-auto"
-      style={{ minHeight: '100vh', height: '100vh' }}
+      className="start-screen-fit flex flex-col min-h-screen bg-[#1a1a2e] text-white overflow-y-auto"
       data-tap-targets
     >
-      <button
-        type="button"
-        onClick={() => setShowSettings(true)}
-        className="absolute top-4 right-4 z-10 p-2 text-white/60 transition-colors hover:text-white"
-        aria-label="Open settings"
-        data-testid="settings-button"
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-        </svg>
-      </button>
+      {/* Header bar: gear only, in normal flow so it never overlaps title */}
+      <header className="flex-shrink-0 flex items-center justify-end h-14 px-4">
+        <button
+          type="button"
+          onClick={() => setShowSettings(true)}
+          className="p-2 text-white/40 hover:text-white/80 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          aria-label="Open settings"
+          data-testid="settings-button"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+        </button>
+      </header>
 
       {showSettings && <ApiKeySettings onClose={() => setShowSettings(false)} />}
 
-      <div
-        className="start-screen-card-wrapper flex flex-col items-center justify-center gap-6 rounded-2xl border border-white/10 px-6 py-8 shadow-xl"
-        style={{
-          backgroundColor: 'rgba(26, 26, 46, 0.95)',
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          WebkitTransform: 'translate(-50%, -50%)',
-        }}
-      >
-        <div className="text-center flex-shrink-0">
-          <h1 className="text-3xl font-bold tracking-tight text-white">Live Captions Pro</h1>
-          <p className="mt-3 text-lg text-white/90 leading-relaxed">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-6 pt-4">
+        <div className="flex flex-col items-center gap-6 max-w-sm w-full text-center">
+          <h1 className="text-3xl font-bold tracking-tight">Live Captions Pro</h1>
+          <p className="text-lg text-white/70 leading-relaxed">
             Real-time captions with zero lost meaning.
           </p>
+
+          <button
+            ref={startButtonRef}
+            type="button"
+            data-testid="start-button"
+            className="w-full py-5 rounded-2xl bg-white text-[#1a1a2e] text-xl font-bold tracking-wide
+              hover:bg-white/90 active:scale-95 transition-all min-h-[56px] touch-manipulation cursor-pointer"
+            aria-label="Start captioning session"
+            suppressHydrationWarning
+          >
+            START CAPTIONING
+          </button>
+
+          <span className="text-sm text-white/50 tracking-widest uppercase">Education Mode</span>
+
+          <IOSTip />
         </div>
-
-        <button
-          ref={startButtonRef}
-          type="button"
-          data-testid="start-button"
-          className="w-full py-5 rounded-2xl bg-white text-[#1a1a2e] text-xl font-bold tracking-wide
-            hover:bg-white/90 active:scale-95 transition-all min-h-[56px] touch-manipulation cursor-pointer flex-shrink-0 relative z-10"
-          aria-label="Start captioning session"
-          onClick={(e) => {
-            e.preventDefault();
-            runOpenModal();
-          }}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            runOpenModal();
-          }}
-        >
-          START CAPTIONING
-        </button>
-
-        <span className="text-sm text-white/70 tracking-widest uppercase flex-shrink-0">Education Mode</span>
-
-        <IOSTip />
       </div>
 
       {showPrePrompt && (
         <div
-          className="mic-prompt-overlay-fit fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4 overflow-y-auto"
+          className="mic-prompt-overlay-fit fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/70 p-4 overflow-y-auto min-h-screen"
           role="dialog"
           aria-modal="true"
           aria-labelledby="mic-prompt-title"
           data-testid="mic-permission-prompt"
         >
-          <div className="bg-[#1a1a2e] rounded-2xl p-6 max-w-sm w-full border border-white/10 shadow-xl my-auto" data-tap-targets>
+          <div className="bg-[#1a1a2e] rounded-2xl p-6 max-w-sm w-full border border-white/10 shadow-xl mt-6" data-tap-targets>
             <h2 id="mic-prompt-title" className="text-xl font-bold text-white mb-3">
               Microphone access
             </h2>

@@ -151,6 +151,13 @@ describe('captionReducer', () => {
     expect(state.captions).toHaveLength(0);
   });
 
+  it('FINALIZE_LINE_WITH_WORDS stores speakerId when provided (diarization)', () => {
+    const words = [{ text: 'Hi', type: 'confirmed' as const, confidence: 1.0, flagged: false }];
+    const state = dispatch(initialState, { type: 'FINALIZE_LINE_WITH_WORDS', payload: { words, speakerId: 2 } });
+    expect(state.captions).toHaveLength(1);
+    expect(state.captions[0].speakerId).toBe(2);
+  });
+
   it('resets feedbackGiven on START_SESSION', () => {
     const ended = dispatch(initialState, { type: 'END_SESSION' });
     const withFeedback = dispatch(ended, { type: 'GIVE_FEEDBACK', payload: 'yes' });
