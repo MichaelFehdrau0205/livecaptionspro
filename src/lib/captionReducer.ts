@@ -15,6 +15,7 @@ export type SessionAction =
   | { type: 'FINALIZE_LINE_WITH_WORDS'; payload: { words: CaptionWord[]; speakerId?: number } }
   | { type: 'APPLY_GAP_FILLER'; payload: { lineId: string; words: CaptionWord[] } }
   | { type: 'FLAG_WORD'; payload: { lineId: string; wordIndex: number } }
+  | { type: 'PAUSE_SESSION' }
   | { type: 'END_SESSION' }
   | { type: 'SET_STATUS'; payload: SessionStatus }
   | { type: 'GIVE_FEEDBACK'; payload: FeedbackGiven };
@@ -66,6 +67,7 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
         words,
         isFinalized: true,
         gapFillerApplied: false,
+        createdAt: Date.now(),
       };
       const nextCaptions = capCaptions([...state.captions, newLine]);
       return {
@@ -88,6 +90,7 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
         isFinalized: true,
         gapFillerApplied: false,
         speakerId,
+        createdAt: Date.now(),
       };
       const nextCaptions = capCaptions([...state.captions, newLine]);
       return {
@@ -141,6 +144,9 @@ export function captionReducer(state: SessionState, action: SessionAction): Sess
       });
       return { ...state, captions: updatedCaptions };
     }
+
+    case 'PAUSE_SESSION':
+      return { ...state, status: 'paused', currentInterim: '' };
 
     case 'END_SESSION':
       return { ...state, status: 'ended', currentInterim: '', sessionEndTime: Date.now() };

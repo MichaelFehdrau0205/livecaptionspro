@@ -49,7 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       {process.env.NODE_ENV === 'production' && <script src="/register-sw.js" defer />}
       </head>
-      <body className="bg-[#1a1a2e] text-white antialiased min-h-full">
+      <body className="bg-[#1a1a2e] text-white antialiased min-h-full" suppressHydrationWarning>
         <a href="#main-content" className="skip-link">Skip to main content</a>
         {/* Fallback behind app (z-0): plain dark bg only — no text, so no duplicate "Live Captions Pro" */}
         <div

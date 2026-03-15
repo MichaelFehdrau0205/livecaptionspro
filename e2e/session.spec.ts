@@ -104,4 +104,14 @@ test.describe('Session flow', () => {
     const response = await page.request.get(`${baseURL}/sw.js`);
     expect(response.status()).toBe(200);
   });
+
+  test('pause button is visible during session', async ({ page, context }) => {
+    await goToSessionScreen(page, context);
+    await expect(page.getByTestId('pause-button')).toBeVisible({ timeout: SESSION_READY_TIMEOUT });
+  });
+
+  test('end session button is visible during session', async ({ page, context }) => {
+    await goToSessionScreen(page, context);
+    await expect(page.getByTestId('end-session-button')).toBeVisible({ timeout: SESSION_READY_TIMEOUT });
+  });
 });

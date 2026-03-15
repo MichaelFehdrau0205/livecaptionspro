@@ -16,6 +16,8 @@ export interface CaptionLine {
   gapFillerApplied: boolean;
   /** Optional; 0-based speaker index from Deepgram diarization. When absent, UI alternates by line index for color boxes. */
   speakerId?: number;
+  /** Unix timestamp (ms) when the line was finalized — used for PDF export timestamps. */
+  createdAt?: number;
 }
 
 export interface SessionStats {

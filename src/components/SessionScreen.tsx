@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@/context/SessionContext';
 import { useDisplayMode } from '@/hooks/useDisplayMode';
+import { printTranscript } from '@/lib/transcriptExport';
 import { StatusBar } from './StatusBar';
 import { CaptionArea } from './CaptionArea';
 import { ControlBar } from './ControlBar';
@@ -24,7 +25,7 @@ function useShowIOSTip() {
 }
 
 export function SessionScreen() {
-  const { state, dispatch, endSession, restartSession, connectionStatus, timer, speechError, isDeepgramActive } = useSession();
+  const { state, dispatch, endSession, pauseSession, resumeSession, restartSession, connectionStatus, timer, speechError, isDeepgramActive } = useSession();
   const [displayMode, setDisplayMode] = useDisplayMode();
   const showIOSTip = useShowIOSTip();
 
@@ -36,27 +37,51 @@ export function SessionScreen() {
     <div className="flex flex-col min-h-[100dvh] bg-[#1a1a2e] text-white overflow-x-hidden">
       <header className="sticky top-0 z-20 flex-shrink-0 w-full bg-[#1a1a2e]">
         <StatusBar connectionStatus={connectionStatus} timer={timer} isDeepgramActive={isDeepgramActive} />
-        <div className="flex w-full justify-center items-center gap-3 px-4 py-3 min-h-[56px] border-b border-white/10 bg-[#1a1a2e]" role="group" aria-label="Caption mode">
-        <button
-          type="button"
-          onClick={() => { if (displayMode !== 'lecture') { setDisplayMode('lecture'); restartSession(); } }}
-          className={`min-h-[40px] min-w-[90px] rounded-lg px-3 py-1.5 text-xs font-semibold transition-all touch-manipulation ${displayMode === 'lecture' ? 'bg-white/25 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}
-          aria-pressed={displayMode === 'lecture'}
-          aria-label="Lecture: single style"
-          data-testid="mode-lecture"
-        >
-          Lecture
-        </button>
-        <button
-          type="button"
-          onClick={() => { if (displayMode !== 'group') { setDisplayMode('group'); restartSession(); } }}
-          className={`min-h-[40px] min-w-[90px] rounded-lg px-3 py-1.5 text-xs font-semibold transition-all touch-manipulation ${displayMode === 'group' ? 'bg-white/25 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}
-          aria-pressed={displayMode === 'group'}
-          aria-label="Group: color boxes"
-          data-testid="mode-group"
-        >
-          Group
-        </button>
+        <div className="flex w-full items-center gap-2 px-4 py-3 min-h-[56px] border-b border-white/10 bg-[#1a1a2e]">
+          {/* Mode toggle */}
+          <div className="flex flex-1 justify-center gap-2" role="group" aria-label="Caption mode">
+            <button
+              type="button"
+              onClick={() => { if (displayMode !== 'lecture') { setDisplayMode('lecture'); restartSession(); } }}
+              className={`min-h-[40px] min-w-[80px] rounded-lg px-3 py-1.5 text-xs font-semibold transition-all touch-manipulation ${displayMode === 'lecture' ? 'bg-white/25 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}
+              aria-pressed={displayMode === 'lecture'}
+              aria-label="Lecture: single style"
+              data-testid="mode-lecture"
+            >
+              Lecture
+            </button>
+            <button
+              type="button"
+              onClick={() => { if (displayMode !== 'group') { setDisplayMode('group'); restartSession(); } }}
+              className={`min-h-[40px] min-w-[80px] rounded-lg px-3 py-1.5 text-xs font-semibold transition-all touch-manipulation ${displayMode === 'group' ? 'bg-white/25 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}
+              aria-pressed={displayMode === 'group'}
+              aria-label="Group: color boxes"
+              data-testid="mode-group"
+            >
+              Group
+            </button>
+          </div>
+          {/* Save transcript — available during session so user can save before switching modes */}
+          {state.captions.length > 0 && state.sessionStartTime && (
+            <button
+              type="button"
+              onClick={() => printTranscript({
+                captions: state.captions,
+                sessionStartTime: state.sessionStartTime!,
+                sessionEndTime: state.sessionEndTime ?? Date.now(),
+              })}
+              className="text-white/40 hover:text-white/80 transition-colors p-2 min-h-[40px] min-w-[40px] flex items-center justify-center"
+              aria-label="Save transcript as PDF"
+              data-testid="save-pdf-session-button"
+              title="Save transcript as PDF"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+          )}
         </div>
       </header>
       <ConnectionBanner status={connectionStatus} />
@@ -77,7 +102,13 @@ export function SessionScreen() {
         onFlagWord={handleFlagWord}
         displayMode={displayMode}
       />
-      <ControlBar onEndSession={endSession} connectionStatus={connectionStatus} />
+      <ControlBar
+        onEndSession={endSession}
+        onPause={pauseSession}
+        onResume={resumeSession}
+        connectionStatus={connectionStatus}
+        sessionStatus={state.status as 'listening' | 'paused' | 'reconnecting'}
+      />
     </div>
   );
 }
