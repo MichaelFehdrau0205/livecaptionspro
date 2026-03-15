@@ -1,6 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SessionEndScreen } from './SessionEndScreen';
+
+const printTranscriptMock = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/transcriptExport', () => ({
+  printTranscript: printTranscriptMock,
+}));
 
 const useSessionMock = vi.hoisted(() => vi.fn());
 vi.mock('@/context/SessionContext', () => ({
@@ -37,6 +42,7 @@ function renderWithMock(giveFeedback = vi.fn(), state = defaultState) {
 
 describe('SessionEndScreen', () => {
   beforeEach(() => {
+    printTranscriptMock.mockClear();
     useSessionMock.mockReturnValue({
       state: defaultState,
       startSession: vi.fn(),
@@ -126,5 +132,105 @@ describe('SessionEndScreen', () => {
     expect(btn).toHaveTextContent(/NEW SESSION/);
     fireEvent.click(btn);
     expect(startSession).toHaveBeenCalled();
+  });
+
+  it('does not show Save as PDF button when there are no captions', () => {
+    // defaultState already has captions: []
+    render(<SessionEndScreen />);
+    expect(screen.queryByTestId('save-pdf-button')).not.toBeInTheDocument();
+  });
+
+  it('does not show Save as PDF button when sessionEndTime is missing', () => {
+    useSessionMock.mockReturnValue({
+      state: { ...defaultState, captions: [
+        {
+          id: 'line1',
+          words: [{ text: 'Hello.', type: 'confirmed' as const, confidence: 1.0, flagged: false }],
+          isFinalized: true,
+          gapFillerApplied: false,
+        },
+      ], sessionEndTime: null },
+      startSession: vi.fn(),
+      giveFeedback: vi.fn(),
+      endSession: vi.fn(),
+      dispatch: vi.fn(),
+      connectionStatus: 'connected',
+      gapFillerPaused: false,
+      timer: '00:00:00',
+      audioError: null,
+      speechError: null,
+      displayMode: 'lecture' as const,
+      setDisplayMode: vi.fn(),
+    });
+    render(<SessionEndScreen />);
+    expect(screen.queryByTestId('save-pdf-button')).not.toBeInTheDocument();
+  });
+
+  it('shows Save as PDF button when session has captions and start/end times', () => {
+    const captionLine = {
+      id: 'line1',
+      words: [{ text: 'Hello.', type: 'confirmed' as const, confidence: 1.0, flagged: false }],
+      isFinalized: true,
+      gapFillerApplied: false,
+    };
+    useSessionMock.mockReturnValue({
+      state: {
+        ...defaultState,
+        captions: [captionLine],
+        sessionStartTime: Date.now() - 60000,
+        sessionEndTime: Date.now(),
+      },
+      startSession: vi.fn(),
+      giveFeedback: vi.fn(),
+      endSession: vi.fn(),
+      dispatch: vi.fn(),
+      connectionStatus: 'connected',
+      gapFillerPaused: false,
+      timer: '00:01:00',
+      audioError: null,
+      speechError: null,
+      displayMode: 'lecture' as const,
+      setDisplayMode: vi.fn(),
+    });
+    render(<SessionEndScreen />);
+    expect(screen.getByTestId('save-pdf-button')).toBeInTheDocument();
+  });
+
+  it('calls printTranscript when Save as PDF button is clicked', () => {
+    const sessionStartTime = Date.now() - 60000;
+    const sessionEndTime = Date.now();
+    const captionLine = {
+      id: 'line1',
+      words: [{ text: 'Hello.', type: 'confirmed' as const, confidence: 1.0, flagged: false }],
+      isFinalized: true,
+      gapFillerApplied: false,
+    };
+    useSessionMock.mockReturnValue({
+      state: {
+        ...defaultState,
+        captions: [captionLine],
+        sessionStartTime,
+        sessionEndTime,
+      },
+      startSession: vi.fn(),
+      giveFeedback: vi.fn(),
+      endSession: vi.fn(),
+      dispatch: vi.fn(),
+      connectionStatus: 'connected',
+      gapFillerPaused: false,
+      timer: '00:01:00',
+      audioError: null,
+      speechError: null,
+      displayMode: 'lecture' as const,
+      setDisplayMode: vi.fn(),
+    });
+    render(<SessionEndScreen />);
+    fireEvent.click(screen.getByTestId('save-pdf-button'));
+    expect(printTranscriptMock).toHaveBeenCalledTimes(1);
+    expect(printTranscriptMock).toHaveBeenCalledWith({
+      captions: [captionLine],
+      sessionStartTime,
+      sessionEndTime,
+    });
   });
 });

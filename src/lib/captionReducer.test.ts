@@ -165,4 +165,29 @@ describe('captionReducer', () => {
     const restarted = dispatch(withFeedback, { type: 'START_SESSION' });
     expect(restarted.feedbackGiven).toBe(null);
   });
+
+  describe('PAUSE_SESSION', () => {
+    it('sets status to paused', () => {
+      const listening = dispatch(initialState, { type: 'START_SESSION' });
+      const paused = dispatch(listening, { type: 'PAUSE_SESSION' });
+      expect(paused.status).toBe('paused');
+    });
+
+    it('clears currentInterim when pausing', () => {
+      const listening = dispatch(initialState, { type: 'START_SESSION' });
+      const withInterim = dispatch(listening, { type: 'ADD_INTERIM', payload: 'in progress' });
+      expect(withInterim.currentInterim).not.toBe('');
+      const paused = dispatch(withInterim, { type: 'PAUSE_SESSION' });
+      expect(paused.currentInterim).toBe('');
+    });
+
+    it('preserves captions when pausing', () => {
+      const listening = dispatch(initialState, { type: 'START_SESSION' });
+      const withLine = dispatch(listening, { type: 'FINALIZE_LINE', payload: 'Hello world' });
+      expect(withLine.captions).toHaveLength(1);
+      const paused = dispatch(withLine, { type: 'PAUSE_SESSION' });
+      expect(paused.captions).toHaveLength(1);
+      expect(paused.captions[0].words[0].text).toBe('Hello');
+    });
+  });
 });

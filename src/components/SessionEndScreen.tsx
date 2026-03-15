@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from '@/context/SessionContext';
+import { printTranscript } from '@/lib/transcriptExport';
 
 function formatDuration(startTime: number | null, endTime: number | null): string {
   if (!startTime) return '00:00:00';
@@ -66,6 +67,23 @@ export function SessionEndScreen() {
             </p>
           )}
         </div>
+
+        {/* Save as PDF */}
+        {state.captions.length > 0 && sessionStartTime && sessionEndTime && (
+          <button
+            onClick={() => printTranscript({
+              captions: state.captions,
+              sessionStartTime,
+              sessionEndTime,
+            })}
+            data-testid="save-pdf-button"
+            className="w-full py-4 rounded-2xl border-2 border-white/30 text-white font-bold tracking-wide
+              hover:border-white/60 active:scale-95 transition-all min-h-[56px]"
+            aria-label="Save transcript as PDF"
+          >
+            SAVE AS PDF
+          </button>
+        )}
 
         <div className="w-full border-t border-white/10" />
 

@@ -41,6 +41,8 @@ interface SessionContextValue {
   dispatch: React.Dispatch<SessionAction>;
   startSession: () => Promise<void>;
   endSession: () => void;
+  pauseSession: () => void;
+  resumeSession: () => void;
   restartSession: () => Promise<void>;
   isDeepgramActive: boolean;
   giveFeedback: (choice: 'yes' | 'no') => void;
@@ -262,6 +264,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'END_SESSION' });
   }, [stopSTT, stopAudio, stopDG]);
 
+  const pauseSession = useCallback(() => {
+    if (state.status !== 'listening') return;
+    if (getDeepgramKey()) { stopDG(); } else { stopSTT(); }
+    dispatch({ type: 'PAUSE_SESSION' });
+  }, [state.status, stopDG, stopSTT]);
+
+  const resumeSession = useCallback(() => {
+    if (state.status !== 'paused') return;
+    const dgKey = getDeepgramKey();
+    dispatch({ type: 'SET_STATUS', payload: 'listening' });
+    if (dgKey) { startDG(dgKey); } else { startSTT(); }
+  }, [state.status, startDG, startSTT]);
+
   // Clears captions and restarts transcription — used when switching display modes
   const restartSession = useCallback(async () => {
     if (state.status !== 'listening') return;
@@ -302,6 +317,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     dispatch,
     startSession,
     endSession,
+    pauseSession,
+    resumeSession,
     restartSession,
     giveFeedback,
     setOverrideNextSpeaker,
