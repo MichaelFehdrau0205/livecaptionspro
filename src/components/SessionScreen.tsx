@@ -24,7 +24,7 @@ function useShowIOSTip() {
 }
 
 export function SessionScreen() {
-  const { state, dispatch, endSession, restartSession, connectionStatus, gapFillerPaused, timer, speechError, isDeepgramActive } = useSession();
+  const { state, dispatch, endSession, restartSession, connectionStatus, timer, speechError, isDeepgramActive } = useSession();
   const [displayMode, setDisplayMode] = useDisplayMode();
   const showIOSTip = useShowIOSTip();
 
@@ -35,7 +35,7 @@ export function SessionScreen() {
   return (
     <div className="flex flex-col min-h-[100dvh] bg-[#1a1a2e] text-white overflow-x-hidden">
       <header className="sticky top-0 z-20 flex-shrink-0 w-full bg-[#1a1a2e]">
-        <StatusBar connectionStatus={connectionStatus} timer={timer} gapFillerPaused={gapFillerPaused} isDeepgramActive={isDeepgramActive} />
+        <StatusBar connectionStatus={connectionStatus} timer={timer} isDeepgramActive={isDeepgramActive} />
         <div className="flex w-full justify-center items-center gap-3 px-4 py-3 min-h-[56px] border-b border-white/10 bg-[#1a1a2e]" role="group" aria-label="Caption mode">
         <button
           type="button"
