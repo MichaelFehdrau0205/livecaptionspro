@@ -24,7 +24,7 @@ function useShowIOSTip() {
 }
 
 export function SessionScreen() {
-  const { state, dispatch, endSession, restartSession, connectionStatus, gapFillerPaused, timer, speechError, isDeepgramActive } = useSession();
+  const { state, dispatch, endSession, restartSession, connectionStatus, timer, speechError, isDeepgramActive } = useSession();
   const [displayMode, setDisplayMode] = useDisplayMode();
   const showIOSTip = useShowIOSTip();
 
@@ -33,23 +33,14 @@ export function SessionScreen() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#1a1a2e] text-white">
-      <StatusBar
-        connectionStatus={connectionStatus}
-        timer={timer}
-        gapFillerPaused={gapFillerPaused}
-        isDeepgramActive={isDeepgramActive}
-      />
-      {/* Lecture vs Group: upper part, near listening */}
-      <div className="flex items-center justify-center gap-2 px-4 py-2 border-b border-white/10 bg-[#1a1a2e]" role="group" aria-label="Caption mode">
+    <div className="flex flex-col min-h-[100dvh] bg-[#1a1a2e] text-white overflow-x-hidden">
+      <header className="sticky top-0 z-20 flex-shrink-0 w-full bg-[#1a1a2e]">
+        <StatusBar connectionStatus={connectionStatus} timer={timer} isDeepgramActive={isDeepgramActive} />
+        <div className="flex w-full justify-center items-center gap-3 px-4 py-3 min-h-[56px] border-b border-white/10 bg-[#1a1a2e]" role="group" aria-label="Caption mode">
         <button
           type="button"
           onClick={() => { if (displayMode !== 'lecture') { setDisplayMode('lecture'); restartSession(); } }}
-          className={`min-h-[40px] min-w-[90px] rounded-lg px-3 py-1.5 text-xs font-semibold transition-all touch-manipulation ${
-            displayMode === 'lecture'
-              ? 'bg-white/25 text-white'
-              : 'bg-white/10 text-white/60 hover:bg-white/20'
-          }`}
+          className={`min-h-[40px] min-w-[90px] rounded-lg px-3 py-1.5 text-xs font-semibold transition-all touch-manipulation ${displayMode === 'lecture' ? 'bg-white/25 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}
           aria-pressed={displayMode === 'lecture'}
           aria-label="Lecture: single style"
           data-testid="mode-lecture"
@@ -59,18 +50,15 @@ export function SessionScreen() {
         <button
           type="button"
           onClick={() => { if (displayMode !== 'group') { setDisplayMode('group'); restartSession(); } }}
-          className={`min-h-[40px] min-w-[90px] rounded-lg px-3 py-1.5 text-xs font-semibold transition-all touch-manipulation ${
-            displayMode === 'group'
-              ? 'bg-white/25 text-white'
-              : 'bg-white/10 text-white/60 hover:bg-white/20'
-          }`}
+          className={`min-h-[40px] min-w-[90px] rounded-lg px-3 py-1.5 text-xs font-semibold transition-all touch-manipulation ${displayMode === 'group' ? 'bg-white/25 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}
           aria-pressed={displayMode === 'group'}
           aria-label="Group: color boxes"
           data-testid="mode-group"
         >
           Group
         </button>
-      </div>
+        </div>
+      </header>
       <ConnectionBanner status={connectionStatus} />
       {speechError && (
         <div className="px-4 py-3 bg-amber-500/20 border-b border-amber-500/40 text-amber-200 text-sm" role="alert">

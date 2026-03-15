@@ -31,6 +31,11 @@ function getDeepgramKey(): string | null {
   );
 }
 
+export type MicStatus = 'READY' | 'LISTENING' | 'WAITING' | 'ERROR';
+
+/** Lecture = single speaker (no 1–4 selector). Group = multi-speaker with selector. */
+export type DisplayMode = 'lecture' | 'group';
+
 interface SessionContextValue {
   state: SessionState;
   dispatch: React.Dispatch<SessionAction>;
@@ -39,11 +44,15 @@ interface SessionContextValue {
   restartSession: () => Promise<void>;
   isDeepgramActive: boolean;
   giveFeedback: (choice: 'yes' | 'no') => void;
+  setOverrideNextSpeaker: (speakerId: number) => void;
   connectionStatus: ReturnType<typeof useConnectionStatus>;
   gapFillerPaused: boolean;
   timer: string;
   audioError: string | null;
   speechError: string | null;
+  micStatus: MicStatus;
+  displayMode: DisplayMode;
+  setDisplayMode: (mode: DisplayMode) => void;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -52,15 +61,19 @@ const SESSION_STORAGE_KEY = 'livecaptionspro_active';
 const SESSION_STALE_MS = 30 * 60 * 1000; // 30 min — avoid treating active sessions as stale on remount (e.g. after 2 min)
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  // Always start with initialState to avoid SSR/client hydration mismatch.
-  // Session restore from sessionStorage happens in a useEffect after mount.
   const [state, dispatch] = useReducer(captionReducer, initialState);
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('lecture');
   const needsRestoreRef = useRef(false);
   const connectionStatus = useConnectionStatus();
   const timer = useSessionTimer(state.sessionStartTime, state.sessionEndTime);
 
+  // Hide static "Loading…" fallback once app has mounted (Safari + all browsers)
+  useEffect(() => {
+    document.body.classList.add('app-mounted');
+    return () => document.body.classList.remove('app-mounted');
+  }, []);
+
   // Restore: read sessionStorage first (useLayoutEffect so it runs before any useEffect that might touch storage).
-  // This way remounts (e.g. HMR, or when the tree updates after more captions) always get a chance to restore.
   useLayoutEffect(() => {
     try {
       const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
@@ -84,8 +97,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [state.status]);
 
-  // Track which lineIds we've already sent to gap filler to avoid double-sending
   const submittedLineIds = useRef<Set<string>>(new Set());
+  const overrideNextSpeakerRef = useRef<number | null>(null);
+
+  const setOverrideNextSpeaker = useCallback((speakerId: number) => {
+    if (speakerId >= 1 && speakerId <= 4) overrideNextSpeakerRef.current = speakerId;
+  }, []);
 
   const onGapFillerResult = useCallback((lineId: string, response: GapFillerResponse) => {
     const words = response.words.map((w) => ({ ...w, flagged: false }));
@@ -150,7 +167,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       clearSpeechErrorOnSuccess();
       dispatch({ type: 'ADD_INTERIM', payload: text });
     },
-    onFinalWords: (words, speakerId) => dispatch({ type: 'FINALIZE_LINE_WITH_WORDS', payload: { words, speakerId } }),
+    onFinalWords: (words, diarizationSpeakerId) => {
+      const speakerId = overrideNextSpeakerRef.current ?? diarizationSpeakerId;
+      if (overrideNextSpeakerRef.current != null) overrideNextSpeakerRef.current = null;
+      dispatch({ type: 'FINALIZE_LINE_WITH_WORDS', payload: { words, speakerId } });
+    },
     onError: handleSpeechError,
   });
 
@@ -204,15 +225,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setSpeechError(null);
     const dgKey = getDeepgramKey();
     if (dgKey) {
-      // Deepgram manages its own mic + audio streaming
       dispatch({ type: 'START_SESSION' });
       startDG(dgKey);
     } else {
-      // Web Speech API — needs RNNoise audio pipeline first
-      const stream = await startAudio();
-      if (!stream) return;
+      // Web Speech API: start STT in same user-gesture turn (desktop Chrome requires it).
+      // Start session and STT synchronously; init audio pipeline in background (optional for RNNoise).
       dispatch({ type: 'START_SESSION' });
       startSTT();
+      const stream = await startAudio();
+      if (!stream) {
+        // Mic failed but STT may still work (browser uses its own capture). No need to abort session.
+      }
     }
   }, [startAudio, startSTT, startDG]);
 
@@ -266,6 +289,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'GIVE_FEEDBACK', payload: choice });
   }, []);
 
+  const micStatus: MicStatus =
+    state.status === 'idle' || state.status === 'ended' ? 'READY'
+    : state.status === 'listening' && connectionStatus === 'connected' && !speechError ? 'LISTENING'
+    : state.status === 'listening' && connectionStatus === 'reconnecting' ? 'WAITING'
+    : state.status === 'listening' && connectionStatus === 'lost' ? 'WAITING'
+    : speechError || connectionStatus === 'lost' ? 'ERROR'
+    : 'WAITING';
+
   const value: SessionContextValue = {
     state,
     dispatch,
@@ -273,12 +304,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     endSession,
     restartSession,
     giveFeedback,
+    setOverrideNextSpeaker,
     connectionStatus,
     gapFillerPaused,
     timer,
     audioError,
     speechError,
     isDeepgramActive: !!getDeepgramKey(),
+    micStatus,
+    displayMode,
+    setDisplayMode,
   };
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

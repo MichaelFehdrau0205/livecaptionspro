@@ -29,6 +29,8 @@ function renderWithMock(giveFeedback = vi.fn(), state = defaultState) {
     timer: '00:02:05',
     audioError: null,
     speechError: null,
+    displayMode: 'lecture' as const,
+    setDisplayMode: vi.fn(),
   });
   return render(<SessionEndScreen />);
 }
@@ -46,6 +48,8 @@ describe('SessionEndScreen', () => {
       timer: '00:02:05',
       audioError: null,
       speechError: null,
+      displayMode: 'lecture' as const,
+      setDisplayMode: vi.fn(),
     });
   });
 
@@ -95,6 +99,12 @@ describe('SessionEndScreen', () => {
     expect(screen.getByTestId('feedback-great')).toHaveTextContent(/Great!/);
   });
 
+  it('renders Lecture and Group for next session with highlight on selection', () => {
+    render(<SessionEndScreen />);
+    expect(screen.getByTestId('end-mode-lecture')).toHaveTextContent('Lecture');
+    expect(screen.getByTestId('end-mode-group')).toHaveTextContent('Group');
+  });
+
   it('renders new session button and calls startSession when clicked', () => {
     const startSession = vi.fn();
     useSessionMock.mockReturnValue({
@@ -108,6 +118,8 @@ describe('SessionEndScreen', () => {
       timer: '00:00:00',
       audioError: null,
       speechError: null,
+      displayMode: 'lecture' as const,
+      setDisplayMode: vi.fn(),
     });
     render(<SessionEndScreen />);
     const btn = screen.getByTestId('new-session-button');

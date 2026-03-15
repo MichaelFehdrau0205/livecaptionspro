@@ -21,12 +21,13 @@ function IOSTip() {
   });
   if (!show) return null;
   return (
-    <p className="text-xs text-white/50 text-center max-w-[280px]">
+    <p className="text-xs text-white/60 text-center max-w-[280px]">
       On iPhone: open this page in <strong>Safari (browser tab)</strong>, not from Home Screen, for speech recognition.
     </p>
   );
 }
 
+// StartScreen is loaded with ssr:false in page.tsx so no hydration issues
 export function StartScreen() {
   const { startSession, audioError } = useSession();
   const [showPrePrompt, setShowPrePrompt] = useState(false);
@@ -40,7 +41,6 @@ export function StartScreen() {
     setShowPrePrompt(true);
   }, []);
 
-  // Safari often ignores React's onClick/onTouchEnd. Use native DOM listeners so both Chrome and Safari get the tap.
   const runOpenModal = useCallback(() => {
     const now = Date.now();
     if (now - lastActivationRef.current < 500) return;
@@ -91,7 +91,6 @@ export function StartScreen() {
     <div
       className="start-screen-fit flex flex-col min-h-screen bg-[#1a1a2e] text-white overflow-y-auto"
       data-tap-targets
-      suppressHydrationWarning
     >
       {/* Header bar: gear only, in normal flow so it never overlaps title */}
       <header className="flex-shrink-0 flex items-center justify-end h-14 px-4">
@@ -111,8 +110,7 @@ export function StartScreen() {
 
       {showSettings && <ApiKeySettings onClose={() => setShowSettings(false)} />}
 
-      {/* Main content: min-height from .start-screen-content in CSS so server/client always match (no hydration mismatch). */}
-      <div className="flex-1 start-screen-content flex flex-col items-center justify-center px-6 pb-6 pt-4">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-6 pt-4">
         <div className="flex flex-col items-center gap-6 max-w-sm w-full text-center">
           <h1 className="text-3xl font-bold tracking-tight">Live Captions Pro</h1>
           <p className="text-lg text-white/70 leading-relaxed">

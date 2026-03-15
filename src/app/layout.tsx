@@ -49,9 +49,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       {process.env.NODE_ENV === 'production' && <script src="/register-sw.js" defer />}
       </head>
-      <body className="bg-[#1a1a2e] text-white antialiased">
+      <body className="bg-[#1a1a2e] text-white antialiased min-h-full">
         <a href="#main-content" className="skip-link">Skip to main content</a>
-        <main id="main-content" className="min-h-screen h-full">{children}</main>
+        {/* Fallback behind app (z-0): plain dark bg only — no text, so no duplicate "Live Captions Pro" */}
+        <div
+          id="app-loading-fallback"
+          className="app-loading-fallback fixed inset-0 z-0 bg-[#0f0f1a]"
+          aria-hidden="true"
+        />
+        <main id="main-content" className="min-h-full flex flex-col relative z-10">{children}</main>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "if(typeof document!=='undefined'){setTimeout(function(){document.body.classList.add('app-mounted');},80);}",
+          }}
+        />
       </body>
     </html>
   );

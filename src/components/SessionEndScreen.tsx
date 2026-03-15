@@ -13,14 +13,13 @@ function formatDuration(startTime: number | null, endTime: number | null): strin
 }
 
 export function SessionEndScreen() {
-  const { state, startSession, giveFeedback } = useSession();
+  const { state, startSession, giveFeedback, displayMode, setDisplayMode } = useSession();
   const { stats, sessionStartTime, sessionEndTime, feedbackGiven } = state;
   const duration = formatDuration(sessionStartTime, sessionEndTime);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#1a1a2e] px-6 text-white">
       <div className="flex flex-col items-center gap-6 max-w-sm w-full text-center">
-        {/* Session stats */}
         <div>
           <h2 className="text-2xl font-bold tracking-tight">SESSION ENDED</h2>
           <div className="mt-4 space-y-2 text-white/70 text-lg">
@@ -32,7 +31,6 @@ export function SessionEndScreen() {
 
         <div className="w-full border-t border-white/10" />
 
-        {/* Feedback prompt — show thanks/great after answering */}
         <div>
           {feedbackGiven === null ? (
             <>
@@ -71,7 +69,31 @@ export function SessionEndScreen() {
 
         <div className="w-full border-t border-white/10" />
 
-        {/* New session */}
+        {/* Mode: Lecture | Group — for next session. */}
+        <div className="flex w-full justify-center items-center gap-3 flex-wrap" role="group" aria-label="Mode for next session">
+          <span className="text-xs font-medium text-white/60 uppercase tracking-wider">Mode</span>
+          <button
+            type="button"
+            onClick={() => setDisplayMode('lecture')}
+            className={`no-underline px-4 py-2.5 text-sm font-semibold transition-all min-h-[44px] ${displayMode === 'lecture' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
+            aria-pressed={displayMode === 'lecture'}
+            aria-label="Lecture — single speaker, white text only"
+            data-testid="end-mode-lecture"
+          >
+            Lecture
+          </button>
+          <button
+            type="button"
+            onClick={() => setDisplayMode('group')}
+            className={`no-underline px-4 py-2.5 text-sm font-semibold transition-all min-h-[44px] ${displayMode === 'group' ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
+            aria-pressed={displayMode === 'group'}
+            aria-label="Group — multiple speakers with colors"
+            data-testid="end-mode-group"
+          >
+            Group
+          </button>
+        </div>
+
         <button
           onClick={startSession}
           data-testid="new-session-button"
