@@ -20,7 +20,7 @@ import { useGapFiller } from '@/hooks/useGapFiller';
 import { useConnectionStatus } from '@/hooks/useConnectionStatus';
 import { useWakeLock } from '@/hooks/useWakeLock';
 import { useSessionTimer } from '@/hooks/useSessionTimer';
-import type { SessionState, GapFillerResponse } from '@/types';
+import type { SessionState, GapFillerResponse, SessionStatus } from '@/types';
 
 function getDeepgramKey(): string | null {
   if (typeof window === 'undefined') return null;
@@ -62,8 +62,23 @@ const SessionContext = createContext<SessionContextValue | null>(null);
 const SESSION_STORAGE_KEY = 'livecaptionspro_active';
 const SESSION_STALE_MS = 30 * 60 * 1000; // 30 min — avoid treating active sessions as stale on remount (e.g. after 2 min)
 
-export function SessionProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(captionReducer, initialState);
+function getInitialState(initialStatus?: SessionStatus): SessionState {
+  const base = { ...initialState };
+  if (initialStatus != null) {
+    base.status = initialStatus;
+    base.sessionEndTime = initialStatus === 'ended' ? Date.now() : null;
+  }
+  return base;
+}
+
+export interface SessionProviderProps {
+  children: ReactNode;
+  /** When 'ended', shows SessionEndScreen immediately (e.g. /end-session page). */
+  initialStatus?: SessionStatus;
+}
+
+export function SessionProvider({ children, initialStatus }: SessionProviderProps) {
+  const [state, dispatch] = useReducer(captionReducer, getInitialState(initialStatus));
   const [displayMode, setDisplayMode] = useState<DisplayMode>('lecture');
   const needsRestoreRef = useRef(false);
   const connectionStatus = useConnectionStatus();
@@ -75,8 +90,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => document.body.classList.remove('app-mounted');
   }, []);
 
-  // Restore: read sessionStorage first (useLayoutEffect so it runs before any useEffect that might touch storage).
+  // Restore: read sessionStorage first (useLayoutEffect so it runs before any useEffect that might touch storage). Skip when showing end-session page.
   useLayoutEffect(() => {
+    if (initialStatus === 'ended') return;
     try {
       const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (!raw) return;
@@ -87,7 +103,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }
       needsRestoreRef.current = true;
     } catch { /* ignore */ }
-  }, []);
+  }, [initialStatus]);
 
   // Persist "session active" so a refresh/HMR doesn't drop user back to Start.
   // Only clear on 'ended' — do NOT clear on 'idle', or a remount would wipe storage before restore can read it.
