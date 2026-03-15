@@ -5,7 +5,7 @@ import { StartScreen } from '@/components/StartScreen';
 import { SessionScreen } from '@/components/SessionScreen';
 import { SessionEndScreen } from '@/components/SessionEndScreen';
 
-function AppRouter() {
+export function AppRouter() {
   const { state } = useSession();
 
   if (state.status === 'idle') return <StartScreen />;
