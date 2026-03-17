@@ -109,10 +109,12 @@ Cache version is `livecaptionspro-v2`. Bump the version string in `sw.js` when d
 |------|---------|
 | `useSpeechRecognition(callbacks)` | `{ status: 'idle'\|'listening'\|'error', start(), stop() }` |
 | `useAudioPipeline()` | `{ status: 'idle'\|'initializing'\|'active'\|'error', error: string\|null, start(), stop() }` |
+| `useDeepgram(callbacks)` | `{ status: 'idle'\|'connecting'\|'listening'\|'reconnecting'\|'error', start(apiKey), stop() }` |
 | `useGapFiller({ onResult })` | `{ fill(lineId, sentence), paused: boolean, flushQueue() }` |
 | `useConnectionStatus()` | `'connected'\|'reconnecting'\|'lost'` |
 | `useWakeLock(active: boolean)` | `void` — side-effect only |
-| `useSessionTimer(startTime: number\|null)` | `string` — formatted `'HH:MM:SS'` |
+| `useSessionTimer(startTime: number\|null, endTime: number\|null)` | `string` — formatted `'HH:MM:SS'` |
+| `useDisplayMode()` | `[DisplayMode, (mode: DisplayMode) => void]` — persisted in localStorage |
 
 **Type note:** `SpeechRecognitionStatus` (`'idle'|'listening'|'error'`) from `useSpeechRecognition` is intentionally separate from `SessionStatus` (`'idle'|'listening'|'paused'|'reconnecting'|'ended'`) in the reducer. The hook has a simpler state machine; `SessionContext` maps between them.
 
@@ -124,8 +126,10 @@ Defined in `src/lib/captionReducer.ts`, dispatched via `SessionContext`:
 |--------|--------------|
 | `START_SESSION` | Sets status to `'listening'`, records `sessionStartTime`, clears captions |
 | `ADD_INTERIM` | Updates `currentInterim` (live gray text, not yet a line) |
-| `FINALIZE_LINE` | Converts `currentInterim` into a new `CaptionLine` with all words as `'confirmed'`, clears interim |
+| `FINALIZE_LINE` | Converts `currentInterim` into a new `CaptionLine` with all words as `'confirmed'`, stamps `createdAt` |
+| `FINALIZE_LINE_WITH_WORDS` | Creates a `CaptionLine` from pre-scored `CaptionWord[]` (Deepgram path), stamps `createdAt` and optional `speakerId` |
 | `APPLY_GAP_FILLER` | Replaces words on a finalized line with Gemini-corrected words (updates `type` + `confidence`), sets `gapFillerApplied: true` |
 | `FLAG_WORD` | Toggles `flagged: true` on a specific word (drives red underline) |
+| `PAUSE_SESSION` | Sets status to `'paused'`, clears interim — mic stops but captions stay |
 | `GIVE_FEEDBACK` | Sets `feedbackGiven` to `'yes'` or `'no'`; `START_SESSION` resets it to `null` |
-| `END_SESSION` | Sets status to `'ended'`, preserves captions and stats for SessionEndScreen |
+| `END_SESSION` | Sets status to `'ended'`, records `sessionEndTime`, preserves captions for end screen + PDF export |
