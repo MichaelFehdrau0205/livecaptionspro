@@ -1,5 +1,7 @@
 # Live Captions Pro
 
+![Live Captions Pro Screenshots](public/Images/iPhoneScreenshot.jpg)
+
 Real-time live captioning with zero lost meaning — built for Deaf and hard of hearing users in education.
 
 **Live app:** https://livecaptionspro.vercel.app
