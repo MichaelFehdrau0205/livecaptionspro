@@ -1,6 +1,7 @@
 # Live Captions Pro
 
-![Live Captions Pro Screenshots](public/Images/project-screenshot.png)
+![Live Captions Pro Splashpage](public/Images/project-screenshot.png)
+![Live Captions Pro Screenshots](public/Images/iPhoneScreenshot.png)
 
 Real-time live captioning with zero lost meaning — built for Deaf and hard of hearing users in education.
 
