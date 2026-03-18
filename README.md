@@ -2,14 +2,6 @@
 
 ![Live Captions Pro Screenshots](public/Images/project-screenshot.png)
 
-More screenshots:
-
-![Start screen](public/Images/01-start.png)
-![Mic permission](public/Images/02-mic.png)
-![Lecture mode](public/Images/04-lecture.png)
-![Group mode](public/Images/06-group-text.png)
-![End session](public/Images/07-end-session.png)
-
 Real-time live captioning with zero lost meaning — built for Deaf and hard of hearing users in education.
 
 **Live app:** https://livecaptionspro.vercel.app
