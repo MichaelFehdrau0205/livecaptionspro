@@ -1,61 +1,140 @@
 # Live Captions Pro
 
-Real-time live captioning with zero lost meaning — built for Deaf and hard of hearing users in education.
+**Real-time captions with zero lost meaning.**
 
-**Live app:** https://livecaptionspro.vercel.app
+Live Captions Pro is a captioning app built for Deaf and hard-of-hearing users in education. It does more than show words on a screen: it helps users judge whether those words are trustworthy.
 
-## What It Does
+**Live app:** [livecaptionspro.vercel.app](https://livecaptionspro.vercel.app)
 
-Live Captions Pro is a Progressive Web App that gives Deaf and hard-of-hearing users real-time captions with visual confidence indicators — so they always know which words to trust and which to question.
+## The Problem
 
-**Core Features:**
-- **Live Captions** — Word-by-word captions under 1 second latency
-- **Confidence Highlighting** — Per-word color coding (white / amber / blue) shows certainty in real time
-- **Lecture Mode** — Flowing paragraph captions with confidence colors for single-speaker use
-- **Group Mode** — Color-coded speaker blocks for multi-speaker conversations
-- **Speaker Diarization** — Deepgram detects who is speaking and colors lines per speaker
-- **Pause / Resume** — Pause the mic mid-session without losing your transcript
-- **Save as PDF** — Export the full timestamped transcript directly from the session
-- **AI Gap Filler** — Gemini corrects misheard words using surrounding context
-- **PWA** — Installable on iOS and Android, works without app store
+Most live captioning tools show text as if it were equally reliable.
+
+That creates a real accessibility gap:
+- users can read the words, but they cannot tell which words are likely correct
+- in a lecture, one wrong word can change the meaning of an explanation
+- in a group conversation, fast speaker changes make it hard to follow who said what
+- exported transcripts often look like raw subtitle dumps, not something a student would actually review later
+
+In short: **captioning apps often capture words, but still lose meaning.**
+
+## Our Solution
+
+Live Captions Pro treats captioning as both a **live understanding problem** and a **review problem**.
+
+It solves that by combining:
+- **real-time captions**
+- **confidence-aware word styling**
+- **mode-specific experiences for lectures vs. group conversations**
+- **review-ready PDF export**
+- **AI-assisted cleanup for unclear text**
+
+The result is a captioning experience where users can quickly answer:
+
+**What was said?**
+
+**How confident should I be in it?**
+
+**What should I double-check later?**
+
+## Why It Feels Different
+
+### Confidence-Aware, Not Just Real-Time
+- White words are high confidence
+- Amber words are uncertain
+- Blue-highlighted words are predicted or corrected
+
+Users are not forced to trust every word equally.
+
+### Two Modes, Two Use Cases
+- **Lecture Mode** is optimized for a single speaker and flowing review text
+- **Group Mode** is optimized for multi-speaker conversations with speaker-based visual separation
+
+### Review-Ready Export
+Instead of exporting a messy caption log, Live Captions Pro generates a cleaner document experience:
+- polished lecture transcript PDFs
+- polished group conversation transcript PDFs
+- separate low-confidence review section
+- notes area for follow-up
+
+## Core Features
+
+| Feature | Why It Matters |
+|---|---|
+| **Live Captions** | Fast on-screen captions for real-time access |
+| **Confidence Highlighting** | Users can judge what is reliable and what may need review |
+| **Lecture Mode** | Cleaner, flowing single-speaker reading experience |
+| **Group Mode** | Better speaker separation for discussion-heavy sessions |
+| **Speaker Diarization** | Deepgram helps distinguish who is speaking |
+| **Pause / Resume** | Users can control the session without losing context |
+| **Save as PDF** | Turns the session into a document worth saving and reviewing |
+| **AI Gap Filler** | Uses context to improve unclear transcript segments |
+| **PWA** | Installable and usable on phones/tablets without an app store |
+
+## PDF Export Highlights
+
+The PDF export is designed to feel like a real document, not a subtitle transcript pasted into print.
+
+### Lecture PDF
+- clean header with date and duration
+- summary section
+- paragraph-style transcript blocks
+- reduced timestamp clutter
+- low-confidence review section
+- notes section
+
+### Group PDF
+- participant section
+- key moments section
+- speaker-grouped transcript blocks
+- uncertainty review section
+- notes section
+
+## Demo Story
+
+If you are seeing Live Captions Pro in a presentation, the key idea is simple:
+
+> Real-time captions are not enough if users cannot tell what to trust.
+
+Live Captions Pro adds the missing layer of confidence, structure, and reviewability.
+
+## Display Modes
+
+| Mode | Best For | Visual Behavior |
+|---|---|---|
+| **Lecture** | Class sessions, presentations, one main speaker | Flowing text with per-word confidence styling |
+| **Group** | Meetings, discussions, multi-speaker environments | Speaker-separated caption blocks |
+
+Switching modes starts a fresh session so each transcript stays coherent.
 
 ## Confidence Color System
 
 | Color | Meaning | Confidence |
-|-------|---------|-----------|
-| White | Confirmed — STT is certain | ≥ 90% |
-| Amber | Uncertain — may be mishearing | 70–89% |
-| Blue highlight | Predicted — low confidence or AI-corrected | < 70% |
-
-## Display Modes
-
-| Mode | Best for | Colors |
-|------|---------|--------|
-| **Lecture** | Single speaker, classroom | Per-word confidence (white/amber/blue) |
-| **Group** | 2–4 speakers, meetings | Per-speaker color blocks |
-
-Switch modes mid-session using the toggle in the header — each mode starts fresh.
+|---|---|---|
+| White | Confirmed | 90%+ |
+| Amber | Uncertain | 70–89% |
+| Blue highlight | Predicted / corrected | Below 70% or AI-adjusted |
 
 ## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16 (App Router) + TypeScript |
+|---|---|
+| Framework | Next.js 16 + TypeScript |
 | Styling | Tailwind CSS |
-| Speech-to-Text (default) | Web Speech API (browser built-in, free) |
-| Speech-to-Text (enhanced) | Deepgram Nova-3 (per-word confidence + diarization) |
-| AI Gap Filler | Google Gemini 2.5 Flash API |
-| Noise Filtering | RNNoise WASM (AudioWorklet) |
+| Default STT | Web Speech API |
+| Enhanced STT | Deepgram Nova-3 |
+| AI Correction | Google Gemini 2.5 Flash |
+| Noise Filtering | RNNoise WASM |
 | Hosting | Vercel |
-| Testing | Vitest + React Testing Library + Playwright (251 tests) |
+| Testing | Vitest + React Testing Library + Playwright |
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 20+
 - npm
-- A Google Gemini API key ([get one free](https://ai.google.dev/))
-- Optional: A Deepgram API key for enhanced confidence + speaker detection ([get one free — $200 credit](https://console.deepgram.com))
+- Google Gemini API key
+- Optional: Deepgram API key for enhanced per-word confidence and speaker diarization
 
 ### Setup
 
@@ -63,19 +142,17 @@ Switch modes mid-session using the toggle in the header — each mode starts fre
 git clone https://github.com/MichaelFehdrau0205/livecaptionspro.git
 cd livecaptionspro
 npm install
-cp .env.example .env.local   # then fill in your keys
+cp .env.example .env.local
 ```
 
-Edit `.env.local`:
+Then add your keys to `.env.local`:
 
-```
+```bash
 GEMINI_API_KEY=your_gemini_api_key_here
 
-# Optional — enables real-time per-word confidence + speaker colors
+# Optional
 NEXT_PUBLIC_DEEPGRAM_API_KEY=your_deepgram_api_key_here
 ```
-
-> **Tip:** You can also enter your Deepgram key directly in the app — tap ⚙️ on the start screen.
 
 ### Run Locally
 
@@ -83,58 +160,31 @@ NEXT_PUBLIC_DEEPGRAM_API_KEY=your_deepgram_api_key_here
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in Chrome or Safari.
+Open [http://localhost:3000](http://localhost:3000).
 
-### Run Tests
+### Test
 
 ```bash
-npm run test          # Unit tests (Vitest) — 251 tests
-npm run test:e2e      # E2E tests (Playwright)
-npm run lint          # Linting
+npm run test
+npm run test:e2e
+npm run lint
 ```
 
-## How It Works
+## Browser Support
 
-**With Deepgram (recommended):**
-1. Tap **Start Captioning** — mic connects to Deepgram via WebSocket
-2. PCM audio streams to Deepgram Nova-3 in real time
-3. Words appear colored by confidence immediately as you speak
-4. In Group mode, different speakers get different colored blocks
-5. Sentences also sent to Gemini for text correction in the background
+| Browser | Speech Recognition | Enhanced Confidence / Diarization | PWA |
+|---|---|---|---|
+| Chrome | Yes | Yes with Deepgram | Yes |
+| Safari | Yes | Yes with Deepgram | Yes |
+| Edge | Yes | Yes with Deepgram | Yes |
+| Firefox | No built-in Web Speech API | Yes with Deepgram | Yes |
 
-**Without Deepgram (fallback):**
-1. Web Speech API transcribes speech (<1s latency)
-2. RNNoise filters background noise
-3. Sentences sent to Gemini for confidence scoring + correction
-4. **DEMO** badge shown in status bar
+## Built For Education
 
-## Session Controls
-
-| Button | Action |
-|--------|--------|
-| **PAUSE** | Stops mic, keeps transcript on screen |
-| **RESUME** | Restarts mic, continues session |
-| **↓ (download icon)** | Save transcript as PDF (available mid-session) |
-| **END** | Ends session, shows stats + save option |
-
-## Browser Compatibility
-
-| Browser | STT | Confidence | PWA |
-|---------|-----|-----------|-----|
-| Chrome (desktop/Android) | ✅ | ✅ with Deepgram | ✅ |
-| Safari (iOS/macOS) | ✅ | ✅ with Deepgram | ✅ |
-| Edge | ✅ | ✅ with Deepgram | ✅ |
-| Firefox | ❌ No Web Speech API | ✅ with Deepgram | ✅ |
-
-> **iOS:** Open in Safari as a browser tab (not from Home Screen) for speech recognition. Enable Dictation in Settings → General → Keyboard.
-
-## Deployment
-
-Deployed automatically to Vercel on push to `main`. Pull requests get preview deployments.
-
-Set in Vercel dashboard → Environment Variables:
-- `GEMINI_API_KEY` — required
-- `NEXT_PUBLIC_DEEPGRAM_API_KEY` — optional, enables enhanced confidence + speaker colors
+Live Captions Pro is especially useful in classrooms, office hours, study groups, and discussion-heavy academic environments where:
+- technical vocabulary matters
+- speaker changes happen quickly
+- users need both real-time access and something reliable to review later
 
 ## Authors
 

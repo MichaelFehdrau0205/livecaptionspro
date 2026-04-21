@@ -231,6 +231,7 @@ describe('SessionEndScreen', () => {
       captions: [captionLine],
       sessionStartTime,
       sessionEndTime,
+      mode: 'lecture',
     });
   });
 });

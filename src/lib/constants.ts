@@ -27,3 +27,4 @@ export const MAX_CAPTION_LINES = 150;
 // Display mode: lecture (one style, flowing) vs group (color boxes per speaker)
 export const DISPLAY_MODE_KEY = 'livecaptionspro_display_mode';
 export type DisplayMode = 'lecture' | 'group';
+export const GROUP_SPEAKER_COUNT_KEY = 'livecaptionspro_group_speaker_count';

@@ -75,6 +75,7 @@ export function SessionEndScreen() {
               captions: state.captions,
               sessionStartTime,
               sessionEndTime,
+              mode: displayMode,
             })}
             data-testid="save-pdf-button"
             className="w-full py-4 rounded-2xl border-2 border-white/30 text-white font-bold tracking-wide

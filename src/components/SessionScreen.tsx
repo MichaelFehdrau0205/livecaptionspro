@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSession } from '@/context/SessionContext';
-import { useDisplayMode } from '@/hooks/useDisplayMode';
+import { useGroupSpeakerCount } from '@/hooks/useGroupSpeakerCount';
 import { printTranscript } from '@/lib/transcriptExport';
 import { StatusBar } from './StatusBar';
 import { CaptionArea } from './CaptionArea';
 import { ControlBar } from './ControlBar';
 import { ConnectionBanner } from './ConnectionBanner';
+import { GroupSessionTools } from './GroupSessionTools';
 
 function useShowIOSTip() {
   const [show] = useState(() => {
@@ -25,8 +26,21 @@ function useShowIOSTip() {
 }
 
 export function SessionScreen() {
-  const { state, dispatch, endSession, pauseSession, resumeSession, restartSession, connectionStatus, timer, speechError, isDeepgramActive } = useSession();
-  const [displayMode, setDisplayMode] = useDisplayMode();
+  const {
+    state,
+    dispatch,
+    endSession,
+    pauseSession,
+    resumeSession,
+    restartSession,
+    connectionStatus,
+    timer,
+    speechError,
+    isDeepgramActive,
+    displayMode,
+    setDisplayMode,
+  } = useSession();
+  const [expectedSpeakerCount, setExpectedSpeakerCount] = useGroupSpeakerCount();
   const showIOSTip = useShowIOSTip();
 
   function handleFlagWord(lineId: string, wordIndex: number) {
@@ -69,6 +83,7 @@ export function SessionScreen() {
                 captions: state.captions,
                 sessionStartTime: state.sessionStartTime!,
                 sessionEndTime: state.sessionEndTime ?? Date.now(),
+                mode: displayMode,
               })}
               className="text-white/40 hover:text-white/80 transition-colors p-2 min-h-[40px] min-w-[40px] flex items-center justify-center"
               aria-label="Save transcript as PDF"
@@ -84,6 +99,12 @@ export function SessionScreen() {
           )}
         </div>
       </header>
+      {displayMode === 'group' && (
+        <GroupSessionTools
+          expectedSpeakerCount={expectedSpeakerCount}
+          onExpectedSpeakerCountChange={setExpectedSpeakerCount}
+        />
+      )}
       <ConnectionBanner status={connectionStatus} />
       {speechError && (
         <div className="px-4 py-3 bg-amber-500/20 border-b border-amber-500/40 text-amber-200 text-sm" role="alert">
@@ -101,6 +122,7 @@ export function SessionScreen() {
         currentInterim={state.currentInterim}
         onFlagWord={handleFlagWord}
         displayMode={displayMode}
+        expectedSpeakerCount={expectedSpeakerCount}
       />
       <ControlBar
         onEndSession={endSession}

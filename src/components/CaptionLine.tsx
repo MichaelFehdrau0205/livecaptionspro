@@ -11,16 +11,16 @@ import type { DisplayMode } from '@/lib/constants';
  */
 interface CaptionLineProps {
   line: CaptionLineType;
-  lineIndex: number;
   onFlagWord: (lineId: string, wordIndex: number) => void;
   tokenSizeClass?: string;
   displayMode?: DisplayMode;
+  expectedSpeakerCount?: 2 | 3 | 4;
 }
 
-function stableRandomSpeakerId(lineId: string): number {
+function stableRandomSpeakerId(lineId: string, maxSpeakers: 2 | 3 | 4): number {
   let h = 0;
   for (let i = 0; i < lineId.length; i++) h = (h * 31 + lineId.charCodeAt(i)) >>> 0;
-  return (h % 4) + 1;
+  return (h % maxSpeakers) + 1;
 }
 
 function wordConfidenceColor(type: string, flagged: boolean): string {
@@ -30,8 +30,14 @@ function wordConfidenceColor(type: string, flagged: boolean): string {
   return 'text-white';
 }
 
-export function CaptionLine({ line, lineIndex, onFlagWord, tokenSizeClass, displayMode = 'group' }: CaptionLineProps) {
-  const speakerId = line.speakerId ?? stableRandomSpeakerId(line.id);
+export function CaptionLine({
+  line,
+  onFlagWord,
+  tokenSizeClass,
+  displayMode = 'group',
+  expectedSpeakerCount = 4,
+}: CaptionLineProps) {
+  const speakerId = line.speakerId ?? stableRandomSpeakerId(line.id, expectedSpeakerCount);
   const speaker = getSpeakerProfile(speakerId);
   const sentence = line.words.map((w) => (w.text ?? '').trim()).filter(Boolean).join(' ');
   const isLecture = displayMode === 'lecture';
