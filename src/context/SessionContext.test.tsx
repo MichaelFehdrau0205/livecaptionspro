@@ -49,12 +49,14 @@ vi.mock('@/hooks/useSessionTimer', () => ({
 }));
 
 function TestChild() {
-  const { state, dispatch, startSession, endSession } = useSession();
+  const { state, dispatch, startSession, endSession, restartSession } = useSession();
   return (
     <div>
       <span data-testid="status">{state.status}</span>
+      <span data-testid="caption-count">{state.captions.length}</span>
       <button onClick={() => startSession()} data-testid="start-btn">Start</button>
       <button onClick={() => endSession()} data-testid="end-btn">End</button>
+      <button onClick={() => restartSession()} data-testid="restart-btn">Restart</button>
       <button
         onClick={() => dispatch({ type: 'FINALIZE_LINE', payload: 'Hello world' })}
         data-testid="finalize-btn"
@@ -78,6 +80,8 @@ describe('SessionContext', () => {
       </SessionProvider>
     );
     expect(screen.getByTestId('status')).toHaveTextContent('idle');
+    expect(startAudio).not.toHaveBeenCalled();
+    expect(startSTT).not.toHaveBeenCalled();
   });
 
   it('startSession dispatches START_SESSION and starts audio + STT', async () => {
@@ -135,5 +139,26 @@ describe('SessionContext', () => {
       expect.any(String),
       'Hello world.'
     );
+  });
+
+  it('restartSession clears existing captions immediately', async () => {
+    const user = userEvent.setup();
+    render(
+      <SessionProvider>
+        <TestChild />
+      </SessionProvider>
+    );
+
+    await user.click(screen.getByTestId('start-btn'));
+    await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('listening'));
+
+    await user.click(screen.getByTestId('finalize-btn'));
+    await waitFor(() => expect(screen.getByTestId('caption-count')).toHaveTextContent('1'));
+
+    startAudio.mockImplementationOnce(() => new Promise(() => {}));
+    await user.click(screen.getByTestId('restart-btn'));
+
+    expect(screen.getByTestId('caption-count')).toHaveTextContent('0');
+    expect(screen.getByTestId('status')).toHaveTextContent('listening');
   });
 });

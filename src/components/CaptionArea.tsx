@@ -11,9 +11,10 @@ interface CaptionAreaProps {
   currentInterim: string;
   onFlagWord: (lineId: string, wordIndex: number) => void;
   displayMode: DisplayMode;
+  expectedSpeakerCount?: 2 | 3 | 4;
 }
 
-export function CaptionArea({ captions, currentInterim, onFlagWord, displayMode }: CaptionAreaProps) {
+export function CaptionArea({ captions, currentInterim, onFlagWord, displayMode, expectedSpeakerCount = 4 }: CaptionAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to latest caption
@@ -32,14 +33,14 @@ export function CaptionArea({ captions, currentInterim, onFlagWord, displayMode 
       data-testid="caption-area"
     >
       <div className="max-w-[720px] mx-auto leading-relaxed">
-        {captions.map((line, index) => (
+        {captions.map((line) => (
           <CaptionLine
             key={line.id}
             line={line}
-            lineIndex={index}
             onFlagWord={onFlagWord}
             tokenSizeClass="text-[24px]"
             displayMode={displayMode}
+            expectedSpeakerCount={expectedSpeakerCount}
           />
         ))}
 

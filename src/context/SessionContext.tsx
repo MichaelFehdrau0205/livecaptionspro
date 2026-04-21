@@ -5,10 +5,9 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useLayoutEffect,
   useReducer,
-  useRef,
   useState,
+  useRef,
   type ReactNode,
 } from 'react';
 import { captionReducer, initialState, type SessionAction } from '@/lib/captionReducer';
@@ -20,6 +19,7 @@ import { useGapFiller } from '@/hooks/useGapFiller';
 import { useConnectionStatus } from '@/hooks/useConnectionStatus';
 import { useWakeLock } from '@/hooks/useWakeLock';
 import { useSessionTimer } from '@/hooks/useSessionTimer';
+import { DISPLAY_MODE_KEY } from '@/lib/constants';
 import type { SessionState, GapFillerResponse, SessionStatus } from '@/types';
 
 function getDeepgramKey(): string | null {
@@ -46,7 +46,6 @@ interface SessionContextValue {
   restartSession: () => Promise<void>;
   isDeepgramActive: boolean;
   giveFeedback: (choice: 'yes' | 'no') => void;
-  setOverrideNextSpeaker: (speakerId: number) => void;
   connectionStatus: ReturnType<typeof useConnectionStatus>;
   gapFillerPaused: boolean;
   timer: string;
@@ -58,9 +57,6 @@ interface SessionContextValue {
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
-
-const SESSION_STORAGE_KEY = 'livecaptionspro_active';
-const SESSION_STALE_MS = 30 * 60 * 1000; // 30 min — avoid treating active sessions as stale on remount (e.g. after 2 min)
 
 function getInitialState(initialStatus?: SessionStatus): SessionState {
   const base = { ...initialState };
@@ -77,12 +73,33 @@ export interface SessionProviderProps {
   initialStatus?: SessionStatus;
 }
 
+function getStoredDisplayMode(): DisplayMode {
+  if (typeof window === 'undefined') return 'lecture';
+  try {
+    const value = localStorage.getItem(DISPLAY_MODE_KEY);
+    if (value === 'lecture' || value === 'group') return value;
+  } catch {
+    /* ignore */
+  }
+  return 'lecture';
+}
+
 export function SessionProvider({ children, initialStatus }: SessionProviderProps) {
   const [state, dispatch] = useReducer(captionReducer, getInitialState(initialStatus));
-  const [displayMode, setDisplayMode] = useState<DisplayMode>('lecture');
-  const needsRestoreRef = useRef(false);
+  const [displayMode, setDisplayModeState] = useState<DisplayMode>(getStoredDisplayMode);
   const connectionStatus = useConnectionStatus();
   const timer = useSessionTimer(state.sessionStartTime, state.sessionEndTime);
+  const acceptRecognitionRef = useRef(false);
+  const acceptRecognitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const setDisplayMode = useCallback((mode: DisplayMode) => {
+    setDisplayModeState(mode);
+    try {
+      localStorage.setItem(DISPLAY_MODE_KEY, mode);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   // Hide static "Loading…" fallback once app has mounted (Safari + all browsers)
   useEffect(() => {
@@ -90,37 +107,23 @@ export function SessionProvider({ children, initialStatus }: SessionProviderProp
     return () => document.body.classList.remove('app-mounted');
   }, []);
 
-  // Restore: read sessionStorage first (useLayoutEffect so it runs before any useEffect that might touch storage). Skip when showing end-session page.
-  useLayoutEffect(() => {
-    if (initialStatus === 'ended') return;
-    try {
-      const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
-      if (!raw) return;
-      const { at } = JSON.parse(raw);
-      if (Date.now() - at > SESSION_STALE_MS) {
-        sessionStorage.removeItem(SESSION_STORAGE_KEY);
-        return;
-      }
-      needsRestoreRef.current = true;
-    } catch { /* ignore */ }
-  }, [initialStatus]);
-
-  // Persist "session active" so a refresh/HMR doesn't drop user back to Start.
-  // Only clear on 'ended' — do NOT clear on 'idle', or a remount would wipe storage before restore can read it.
-  useEffect(() => {
-    if (state.status === 'listening') {
-      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ at: Date.now() }));
-    } else if (state.status === 'ended') {
-      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  const blockRecognition = useCallback(() => {
+    acceptRecognitionRef.current = false;
+    if (acceptRecognitionTimerRef.current) {
+      clearTimeout(acceptRecognitionTimerRef.current);
+      acceptRecognitionTimerRef.current = null;
     }
-  }, [state.status]);
+  }, []);
+
+  const allowRecognitionSoon = useCallback((delayMs = 250) => {
+    if (acceptRecognitionTimerRef.current) clearTimeout(acceptRecognitionTimerRef.current);
+    acceptRecognitionTimerRef.current = setTimeout(() => {
+      acceptRecognitionRef.current = true;
+      acceptRecognitionTimerRef.current = null;
+    }, delayMs);
+  }, []);
 
   const submittedLineIds = useRef<Set<string>>(new Set());
-  const overrideNextSpeakerRef = useRef<number | null>(null);
-
-  const setOverrideNextSpeaker = useCallback((speakerId: number) => {
-    if (speakerId >= 1 && speakerId <= 4) overrideNextSpeakerRef.current = speakerId;
-  }, []);
 
   const onGapFillerResult = useCallback((lineId: string, response: GapFillerResponse) => {
     const words = response.words.map((w) => ({ ...w, flagged: false }));
@@ -170,10 +173,12 @@ export function SessionProvider({ children, initialStatus }: SessionProviderProp
 
   const { start: startSTT, stop: stopSTT } = useSpeechRecognition({
     onInterim: (text) => {
+      if (!acceptRecognitionRef.current) return;
       clearSpeechErrorOnSuccess();
       dispatch({ type: 'ADD_INTERIM', payload: text });
     },
     onFinal: (text) => {
+      if (!acceptRecognitionRef.current) return;
       clearSpeechErrorOnSuccess();
       dispatch({ type: 'FINALIZE_LINE', payload: addEndPunctuation(String(text ?? '').trim()) });
     },
@@ -182,13 +187,13 @@ export function SessionProvider({ children, initialStatus }: SessionProviderProp
 
   const { start: startDG, stop: stopDG } = useDeepgram({
     onInterim: (text) => {
+      if (!acceptRecognitionRef.current) return;
       clearSpeechErrorOnSuccess();
       dispatch({ type: 'ADD_INTERIM', payload: text });
     },
     onFinalWords: (words, diarizationSpeakerId) => {
-      const speakerId = overrideNextSpeakerRef.current ?? diarizationSpeakerId;
-      if (overrideNextSpeakerRef.current != null) overrideNextSpeakerRef.current = null;
-      dispatch({ type: 'FINALIZE_LINE_WITH_WORDS', payload: { words, speakerId } });
+      if (!acceptRecognitionRef.current) return;
+      dispatch({ type: 'FINALIZE_LINE_WITH_WORDS', payload: { words, speakerId: diarizationSpeakerId } });
     },
     onError: handleSpeechError,
   });
@@ -241,36 +246,27 @@ export function SessionProvider({ children, initialStatus }: SessionProviderProp
   const startSession = useCallback(async () => {
     submittedLineIds.current = new Set();
     setSpeechError(null);
+    blockRecognition();
     const dgKey = getDeepgramKey();
     if (dgKey) {
       dispatch({ type: 'START_SESSION' });
       startDG(dgKey);
+      allowRecognitionSoon();
     } else {
       // Web Speech API: start STT in same user-gesture turn (desktop Chrome requires it).
       // Start session and STT synchronously; init audio pipeline in background (optional for RNNoise).
       dispatch({ type: 'START_SESSION' });
       startSTT();
+      allowRecognitionSoon();
       const stream = await startAudio();
       if (!stream) {
         // Mic failed but STT may still work (browser uses its own capture). No need to abort session.
       }
     }
-  }, [startAudio, startSTT, startDG]);
-
-  // Re-start audio/STT after session restore (needsRestoreRef set by useLayoutEffect above)
-  useEffect(() => {
-    if (!needsRestoreRef.current) return;
-    needsRestoreRef.current = false;
-    dispatch({ type: 'START_SESSION' });
-    const dgKey = getDeepgramKey();
-    if (dgKey) {
-      startDG(dgKey);
-    } else {
-      startAudio().then((stream) => { if (stream) startSTT(); });
-    }
-  }, [startAudio, startSTT, startDG]);
+  }, [allowRecognitionSoon, blockRecognition, startAudio, startSTT, startDG]);
 
   const endSession = useCallback(() => {
+    blockRecognition();
     if (getDeepgramKey()) {
       stopDG();
     } else {
@@ -278,24 +274,32 @@ export function SessionProvider({ children, initialStatus }: SessionProviderProp
       stopAudio();
     }
     dispatch({ type: 'END_SESSION' });
-  }, [stopSTT, stopAudio, stopDG]);
+  }, [blockRecognition, stopSTT, stopAudio, stopDG]);
 
   const pauseSession = useCallback(() => {
     if (state.status !== 'listening') return;
+    blockRecognition();
     if (getDeepgramKey()) { stopDG(); } else { stopSTT(); }
     dispatch({ type: 'PAUSE_SESSION' });
-  }, [state.status, stopDG, stopSTT]);
+  }, [blockRecognition, state.status, stopDG, stopSTT]);
 
   const resumeSession = useCallback(() => {
     if (state.status !== 'paused') return;
     const dgKey = getDeepgramKey();
     dispatch({ type: 'SET_STATUS', payload: 'listening' });
-    if (dgKey) { startDG(dgKey); } else { startSTT(); }
-  }, [state.status, startDG, startSTT]);
+    blockRecognition();
+    if (dgKey) {
+      startDG(dgKey);
+    } else {
+      startSTT();
+    }
+    allowRecognitionSoon();
+  }, [allowRecognitionSoon, blockRecognition, state.status, startDG, startSTT]);
 
   // Clears captions and restarts transcription — used when switching display modes
   const restartSession = useCallback(async () => {
     if (state.status !== 'listening') return;
+    blockRecognition();
     const dgKey = getDeepgramKey();
     if (dgKey) {
       stopDG();
@@ -305,19 +309,26 @@ export function SessionProvider({ children, initialStatus }: SessionProviderProp
     }
     submittedLineIds.current = new Set();
     setSpeechError(null);
+    dispatch({ type: 'START_SESSION' });
     if (dgKey) {
-      dispatch({ type: 'START_SESSION' });
       startDG(dgKey);
+      allowRecognitionSoon();
     } else {
       const stream = await startAudio();
       if (!stream) return;
-      dispatch({ type: 'START_SESSION' });
       startSTT();
+      allowRecognitionSoon();
     }
-  }, [state.status, stopDG, stopSTT, stopAudio, startDG, startSTT, startAudio]);
+  }, [allowRecognitionSoon, blockRecognition, state.status, stopDG, stopSTT, stopAudio, startDG, startSTT, startAudio]);
 
   const giveFeedback = useCallback((choice: 'yes' | 'no') => {
     dispatch({ type: 'GIVE_FEEDBACK', payload: choice });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (acceptRecognitionTimerRef.current) clearTimeout(acceptRecognitionTimerRef.current);
+    };
   }, []);
 
   const micStatus: MicStatus =
@@ -337,7 +348,6 @@ export function SessionProvider({ children, initialStatus }: SessionProviderProp
     resumeSession,
     restartSession,
     giveFeedback,
-    setOverrideNextSpeaker,
     connectionStatus,
     gapFillerPaused,
     timer,

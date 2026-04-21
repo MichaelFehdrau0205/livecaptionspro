@@ -1,9 +1,11 @@
 'use client';
 
+import Link from 'next/link';
+
 /**
  * Static HTML fallback so Safari shows something before React paints.
  * Uses CSS classes only (no inline styles) to avoid server/client hydration mismatch.
- * START CAPTIONING links to /new-session (microphone page), then Allow → live session → end session page.
+ * START CAPTIONING links to the normal start flow on /.
  */
 export function StaticStartFallback() {
   return (
@@ -17,13 +19,13 @@ export function StaticStartFallback() {
         <p className="static-start-fallback-tagline">
           Real-time captions with zero lost meaning.
         </p>
-        <a
-          href="/new-session"
+        <Link
+          href="/"
           data-testid="start-button"
           className="static-start-fallback-btn"
         >
           START CAPTIONING
-        </a>
+        </Link>
       </div>
     </div>
   );
